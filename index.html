@@ -2443,7 +2443,7 @@ function openDoneProof(tid){
   const t=tasks.find(x=>x.id===tid);if(!t)return;
   document.getElementById('dp-task').value=t.name;
   document.getElementById('dp-scheduled').value=(t.schedDate?fDate(t.schedDate):'NOT SET')+(t.time?' — '+t.time:'');
-  document.getElementById('dp-time').value=fTime();
+  document.getElementById('dp-time').value=fDate(toDay())+' — '+fTime();
   document.getElementById('dp-tid').value=tid;
   document.getElementById('dp-remark').value='';
   // Delay check: date se
@@ -2466,7 +2466,7 @@ function submitDone(){
     t.completionHistory.push({
       doneBy: currentUser.name,
       doneDate: toDay(),
-      doneTime: fTime(),
+      doneTime: fDate(toDay())+' — '+fTime(),
       remark: remark,
       isDelayed: isDelayed,
       delayReason: isDelayed?delayReason:'',
@@ -2475,7 +2475,7 @@ function submitDone(){
     // Current status update
     t.status='done';
     t.doneBy=currentUser.name;
-    t.doneTime=fTime();
+    t.doneTime=fDate(toDay())+' — '+fTime();
     t.doneRemark=remark;
     t.isDelayed=isDelayed;
     t.delayReason=isDelayed?delayReason:'';

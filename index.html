@@ -190,6 +190,7 @@ tbody tr:hover{background:#f8fbff;}
 .fg input[type=email]{text-transform:lowercase;}
 .fg input[type=date]{text-transform:none;}
 .fg input[data-noupper]{text-transform:none!important;}
+.pw-wrap input{text-transform:none!important;letter-spacing:0.3px;}
 .fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--teal);}
 .fg textarea{resize:vertical;min-height:70px;}
 .fg input:disabled,.fg textarea:disabled{background:#f5f8fc;color:var(--muted);cursor:not-allowed;}
@@ -1589,8 +1590,16 @@ document.addEventListener('keyup',function(e){
 function togglePw(inputId,btn){
   const inp=document.getElementById(inputId);
   if(!inp)return;
-  if(inp.type==='password'){inp.type='text';btn.textContent='🙈';btn.style.color='rgba(56,189,248,0.9)';}
-  else{inp.type='password';btn.textContent='👁️';btn.style.color='';}
+  if(inp.type==='password'){
+    inp.type='text';
+    inp.style.textTransform='none';  // text dikhne par bhi uppercase nahi
+    inp.style.letterSpacing='0.3px';
+    btn.textContent='🙈';btn.style.color='rgba(56,189,248,0.9)';
+  } else {
+    inp.type='password';
+    inp.style.textTransform='none';
+    btn.textContent='👁️';btn.style.color='';
+  }
 }
 (function(){
   function init3D(){

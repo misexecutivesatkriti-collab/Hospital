@@ -57,7 +57,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 /* Form fields */
 .form-field{margin-bottom:16px;}
 .form-field label{display:block;font-size:11px;font-weight:800;color:rgba(148,197,237,0.5);letter-spacing:1px;text-transform:uppercase;margin-bottom:7px;}
-.form-field input,.form-field select{width:100%;padding:12px 15px;border-radius:10px;border:1.5px solid rgba(99,179,237,0.12);background:rgba(255,255,255,0.05);color:white;font-family:'Nunito',sans-serif;font-size:13.5px;outline:none;transition:border-color 0.25s,box-shadow 0.25s,background 0.25s;text-transform:uppercase;}
+.form-field input,.form-field select{width:100%;padding:12px 15px;border-radius:10px;border:1.5px solid rgba(99,179,237,0.12);background:rgba(255,255,255,0.05);color:white;font-family:'Nunito',sans-serif;font-size:13.5px;outline:none;transition:border-color 0.25s,box-shadow 0.25s,background 0.25s;text-transform:none;}
 .form-field input[type=password]{text-transform:none!important;letter-spacing:0.5px;}
 .form-field input::placeholder{color:rgba(255,255,255,0.2);}
 .form-field input:focus{border-color:#38bdf8;background:rgba(56,189,248,0.08);box-shadow:0 0 0 3px rgba(56,189,248,0.15);}
@@ -185,11 +185,12 @@ tbody tr:hover{background:#f8fbff;}
 .alrt-purple{background:#ede9fe;color:#4c1d95;border-left-color:var(--purple);}
 .fg{display:flex;flex-direction:column;gap:5px;margin-bottom:13px;}
 .fg label{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;}
-.fg input,.fg select,.fg textarea{padding:9px 13px;border-radius:8px;border:1.5px solid var(--border);font-family:'Nunito',sans-serif;font-size:13px;color:var(--text);outline:none;transition:border-color 0.2s;background:white;font-weight:600;text-transform:uppercase;}.fg input[type=password],.fg input[type=email],.fg input[type=time]{text-transform:none;letter-spacing:0.5px;}
+.fg input,.fg select,.fg textarea{padding:9px 13px;border-radius:8px;border:1.5px solid var(--border);font-family:'Nunito',sans-serif;font-size:13px;color:var(--text);outline:none;transition:border-color 0.2s;background:white;font-weight:600;text-transform:none;}.fg input[type=password],.fg input[type=email],.fg input[type=time]{text-transform:none;letter-spacing:0.3px;}
 .fg input[type=password],.fg input[type=time]{text-transform:none!important;letter-spacing:0.3px;}
 .fg input[type=email]{text-transform:lowercase;}
 .fg input[type=date]{text-transform:none;}
 .fg input[data-noupper]{text-transform:none!important;}
+.pw-wrap input{text-transform:none!important;letter-spacing:0.3px;}
 .fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--teal);}
 .fg textarea{resize:vertical;min-height:70px;}
 .fg input:disabled,.fg textarea:disabled{background:#f5f8fc;color:var(--muted);cursor:not-allowed;}
@@ -211,7 +212,7 @@ tbody tr:hover{background:#f8fbff;}
 .ibtn:hover{background:var(--bg);color:var(--text);}
 .ibtn.del:hover{background:#fde8e8;border-color:var(--red);color:var(--red);}
 .fbar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
-.fbar input,.fbar select{padding:8px 12px;border-radius:7px;border:1.5px solid var(--border);font-family:'Nunito',sans-serif;font-size:12.5px;color:var(--text);outline:none;text-transform:uppercase;}
+.fbar input,.fbar select{padding:8px 12px;border-radius:7px;border:1.5px solid var(--border);font-family:'Nunito',sans-serif;font-size:12.5px;color:var(--text);outline:none;text-transform:none;}
 .fbar input:focus,.fbar select:focus{border-color:var(--teal);}
 .search-wrap{flex:1;min-width:160px;position:relative;}
 .search-wrap input{width:100%;padding-left:32px;}
@@ -500,7 +501,7 @@ tbody tr:hover{background:#f8fbff;}
   <div id="panel-staff" style="display:none;">
     <div class="form-field">
       <label>Your Name *</label>
-      <input type="text" id="st-name" placeholder="Username ya Name" autocomplete="off" autocapitalize="none" spellcheck="false" style="text-transform:none!important;">
+      <input type="text" id="st-name" placeholder="Username ya Name" autocomplete="off" autocapitalize="none" spellcheck="false">
     </div>
     <div class="form-field">
       <label>Password *</label>
@@ -698,7 +699,7 @@ tbody tr:hover{background:#f8fbff;}
     <div class="mbody">
       <div class="alrt alrt-blue">Staff login Username + Password se karte hain. Username case-sensitive hai.</div>
       <div class="fg"><label>Full Name *</label><input id="e-name" placeholder="E.G. RAJESH KUMAR"></div>
-      <div class="fg"><label>Username * <span style="font-weight:400;color:var(--muted);">(Login ke liye)</span></label><input id="e-username" placeholder="e.g. rajesh123" data-noupper="1" style="text-transform:none!important;" autocapitalize="none" spellcheck="false"></div>
+      <div class="fg"><label>Username * <span style="font-weight:400;color:var(--muted);">(Login ke liye)</span></label><input id="e-username" placeholder="e.g. rajesh123" autocapitalize="none" spellcheck="false"></div>
       <div class="fg"><label>Department *</label><select id="e-dept"><option value="">Select...</option></select></div>
       <div class="fg"><label>Designation</label><input id="e-desig" placeholder="E.G. HOUSEKEEPING SUPERVISOR"></div>
       <div class="fg"><label>Email (For Notifications)</label><input type="email" id="e-email" placeholder="employee@hospital.com"></div>
@@ -946,25 +947,7 @@ tbody tr:hover{background:#f8fbff;}
 </div>
 
 <script>
-// FORCE UPPERCASE — sirf general fields, password/username kabhi nahi
-document.addEventListener('input', function(e){
-  const el = e.target;
-  if(el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA') return;
-  // Password, date, hidden, email, time — kabhi uppercase nahi
-  if(['password','date','hidden','time','email'].includes(el.type)) return;
-  if(el.disabled) return;
-  // Ye specific IDs uppercase nahi honge (login + username fields)
-  const skipIds=['lnk-url','lnk-emoji','st-name','adm-user','e-username','pw-user'];
-  if(skipIds.includes(el.id)) return;
-  // data-noupper attribute wale skip
-  if(el.dataset && el.dataset.noupper) return;
-  // text-transform:none wale skip
-  const cs=window.getComputedStyle(el);
-  if(cs.textTransform==='none' && !el.classList.contains('force-upper')) return;
-  const s = el.selectionStart, end = el.selectionEnd;
-  el.value = el.value.toUpperCase();
-  try{ el.setSelectionRange(s, end); } catch(x){}
-});
+// INPUT — case as-is rakho, koi force uppercase nahi
 
 // DATA HELPERS
 var ld=(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch{return d;}};

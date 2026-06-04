@@ -57,7 +57,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 /* Form fields */
 .form-field{margin-bottom:16px;}
 .form-field label{display:block;font-size:11px;font-weight:800;color:rgba(148,197,237,0.5);letter-spacing:1px;text-transform:uppercase;margin-bottom:7px;}
-.form-field input,.form-field select{width:100%;padding:12px 15px;border-radius:10px;border:1.5px solid rgba(99,179,237,0.12);background:rgba(255,255,255,0.05);color:white;font-family:'Nunito',sans-serif;font-size:13.5px;outline:none;transition:border-color 0.25s,box-shadow 0.25s,background 0.25s;text-transform:none;}
+.form-field input,.form-field select{width:100%;padding:12px 15px;border-radius:10px;border:1.5px solid rgba(99,179,237,0.12);background:rgba(255,255,255,0.05);color:white;font-family:'Nunito',sans-serif;font-size:13.5px;outline:none;transition:border-color 0.25s,box-shadow 0.25s,background 0.25s;text-transform:uppercase;}
 .form-field input[type=password]{text-transform:none!important;letter-spacing:0.5px;}
 .form-field input::placeholder{color:rgba(255,255,255,0.2);}
 .form-field input:focus{border-color:#38bdf8;background:rgba(56,189,248,0.08);box-shadow:0 0 0 3px rgba(56,189,248,0.15);}
@@ -185,12 +185,11 @@ tbody tr:hover{background:#f8fbff;}
 .alrt-purple{background:#ede9fe;color:#4c1d95;border-left-color:var(--purple);}
 .fg{display:flex;flex-direction:column;gap:5px;margin-bottom:13px;}
 .fg label{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;}
-.fg input,.fg select,.fg textarea{padding:9px 13px;border-radius:8px;border:1.5px solid var(--border);font-family:'Nunito',sans-serif;font-size:13px;color:var(--text);outline:none;transition:border-color 0.2s;background:white;font-weight:600;text-transform:uppercase;}.fg input[type=password],.fg input[type=email],.fg input[type=time]{text-transform:none!important;letter-spacing:0.5px;}
+.fg input,.fg select,.fg textarea{padding:9px 13px;border-radius:8px;border:1.5px solid var(--border);font-family:'Nunito',sans-serif;font-size:13px;color:var(--text);outline:none;transition:border-color 0.2s;background:white;font-weight:600;text-transform:uppercase;}.fg input[type=password],.fg input[type=email],.fg input[type=time]{text-transform:none;letter-spacing:0.5px;}
 .fg input[type=password],.fg input[type=time]{text-transform:none!important;letter-spacing:0.3px;}
 .fg input[type=email]{text-transform:lowercase;}
 .fg input[type=date]{text-transform:none;}
 .fg input[data-noupper]{text-transform:none!important;}
-.pw-wrap input{text-transform:none!important;letter-spacing:0.3px;}
 .fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--teal);}
 .fg textarea{resize:vertical;min-height:70px;}
 .fg input:disabled,.fg textarea:disabled{background:#f5f8fc;color:var(--muted);cursor:not-allowed;}
@@ -243,7 +242,7 @@ tbody tr:hover{background:#f8fbff;}
 .cl-label{flex:1;}
 .cl-name{font-size:13px;font-weight:600;}
 .cl-meta{font-size:11px;color:var(--muted);margin-top:2px;}
-.cl-done .cl-name{color:var(--green);font-weight:700;}
+.cl-done .cl-name{text-decoration:line-through;color:var(--muted);}
 .track-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-bottom:18px;}
 .track-dept-card{background:white;border-radius:11px;border:1px solid var(--border);padding:14px;transition:transform 0.2s,box-shadow 0.2s;cursor:pointer;}
 .track-dept-card:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,0.08);}
@@ -490,7 +489,7 @@ tbody tr:hover{background:#f8fbff;}
     <div class="form-field">
       <label>Password</label>
       <div class="pw-wrap">
-        <input type="password" id="adm-pass" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="••••••" onkeydown="if(event.key==='Enter')adminLogin()">
+        <input type="password" id="adm-pass" autocomplete="current-password" autocapitalize="none" spellcheck="false" placeholder="••••••" onkeydown="if(event.key==='Enter')adminLogin()">
         <button class="pw-eye" type="button" onclick="togglePw('adm-pass',this)" tabindex="-1">👁️</button>
       </div>
     </div>
@@ -506,7 +505,7 @@ tbody tr:hover{background:#f8fbff;}
     <div class="form-field">
       <label>Password *</label>
       <div class="pw-wrap">
-        <input type="password" id="st-pass" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="••••••" onkeydown="if(event.key==='Enter')staffLogin()">
+        <input type="password" id="st-pass" autocomplete="current-password" autocapitalize="none" spellcheck="false" placeholder="••••••" onkeydown="if(event.key==='Enter')staffLogin()">
         <button class="pw-eye" type="button" onclick="togglePw('st-pass',this)" tabindex="-1">👁️</button>
       </div>
     </div>
@@ -703,7 +702,7 @@ tbody tr:hover{background:#f8fbff;}
       <div class="fg"><label>Department *</label><select id="e-dept"><option value="">Select...</option></select></div>
       <div class="fg"><label>Designation</label><input id="e-desig" placeholder="E.G. HOUSEKEEPING SUPERVISOR"></div>
       <div class="fg"><label>Email (For Notifications)</label><input type="email" id="e-email" placeholder="employee@hospital.com"></div>
-      <div class="fg"><label>Password *</label><div class="pw-wrap"><input type="password" id="e-pass" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Password (case sensitive)"><button class="pw-eye" type="button" onclick="togglePw('e-pass',this)" tabindex="-1">👁️</button></div></div>
+      <div class="fg"><label>Password *</label><div class="pw-wrap"><input type="password" id="e-pass" autocomplete="new-password" autocapitalize="none" spellcheck="false" placeholder="SET PASSWORD"><button class="pw-eye" type="button" onclick="togglePw('e-pass',this)" tabindex="-1">👁️</button></div></div>
       <input type="hidden" id="e-eid">
       <div class="form-actions">
         <button class="btn btn-teal" onclick="saveEmployee()">💾 Save Employee</button>
@@ -722,7 +721,7 @@ tbody tr:hover{background:#f8fbff;}
         <div class="fg"><label>Full Name *</label><input id="adm-name" placeholder="E.G. RAHUL SHARMA"></div>
         <div class="fg"><label>Username * (Login ke liye)</label><input id="adm-uname" placeholder="E.G. RAHUL"></div>
         <div class="fg"><label>Email (Notifications)</label><input type="email" id="adm-email" placeholder="admin@hospital.com"></div>
-        <div class="fg"><label>Password *</label><div class="pw-wrap"><input type="password" id="adm-pwd" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Password (case sensitive)"><button class="pw-eye" type="button" onclick="togglePw('adm-pwd',this)" tabindex="-1">👁️</button></div></div>
+        <div class="fg"><label>Password *</label><div class="pw-wrap"><input type="password" id="adm-pwd" autocomplete="new-password" autocapitalize="none" spellcheck="false" placeholder="SET PASSWORD"><button class="pw-eye" type="button" onclick="togglePw('adm-pwd',this)" tabindex="-1">👁️</button></div></div>
         <div class="fg"><label>Role / Designation</label><input id="adm-role" placeholder="E.G. FLOOR MANAGER"></div>
         <div class="fg"><label>Department <span style="font-size:10px;font-weight:400;color:var(--muted);text-transform:none;">(Optional)</span></label>
           <select id="adm-dept"><option value="">-- KOI NAHI / GENERAL --</option></select>
@@ -952,10 +951,10 @@ document.addEventListener('input', function(e){
   const el = e.target;
   if(el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA') return;
   // Password, date, hidden, email, time — kabhi uppercase nahi
-  if(['password','date','hidden','time','email'].includes(el.type)) return; // password kabhi uppercase nahi
+  if(['password','date','hidden','time','email'].includes(el.type)) return;
   if(el.disabled) return;
   // Ye specific IDs uppercase nahi honge (login + username fields)
-  const skipIds=['lnk-url','lnk-emoji','st-name','adm-user','e-username','pw-user','e-pass','adm-pwd','pw-cur','pw-new','pw-cnf','sp-cur','sp-new','sp-cnf','tc-pass','adm-pass','st-pass','sp-username'];
+  const skipIds=['lnk-url','lnk-emoji','st-name','adm-user','e-username','pw-user'];
   if(skipIds.includes(el.id)) return;
   // data-noupper attribute wale skip
   if(el.dataset && el.dataset.noupper) return;
@@ -1268,11 +1267,11 @@ function sendAssignmentEmail(task, emails, names){
         <table width="100%" cellpadding="0" cellspacing="0">
           <tr>
             <td style="vertical-align:top;">
-              <div style="width:48px;height:48px;background:linear-gradient(135deg,#0b1e3d,#0d7377);border-radius:12px;display:inline-block;text-align:center;line-height:48px;font-size:22px;float:left;margin-right:14px;">🏥</div>
+              <div style="width:48px;height:48px;background:linear-gradient(135deg,#0b1e3d,#0d7377);border-radius:12px;display:inline-flex;align-items:center;justify-content:center;font-size:22px;float:left;margin-right:14px;">👨‍💼</div>
               <div style="overflow:hidden;">
-                <div style="font-size:15px;font-weight:800;color:#0b1e3d;">Hospital Operations System</div>
-                <div style="font-size:12px;color:#0d7377;font-weight:700;margin-top:2px;">Automated Notification Service</div>
-                <div style="font-size:11px;color:#9aa5b4;margin-top:2px;">Task Management Platform</div>
+                <div style="font-size:15px;font-weight:800;color:#0b1e3d;">${assignerName}</div>
+                <div style="font-size:12px;color:#0d7377;font-weight:700;margin-top:2px;">${assignerRole}</div>
+                <div style="font-size:11px;color:#9aa5b4;margin-top:2px;">Hospital Operations System</div>
               </div>
             </td>
             <td align="right" style="vertical-align:middle;">
@@ -1546,7 +1545,7 @@ function testEmail(){
   const tplId = emailCfg.templateId || emailCfg.reminderId;
   if(!tplId){alert('❌ Koi template ID nahi hai!');return;}
   emailjs.send(emailCfg.serviceId, tplId, {
-    to_email: 'leave.satkriti@gmail.com',
+    to_email: 'test@example.com',
     to_name: 'TEST USER',
     task_name: 'TEST TASK — HOSPITAL OPS',
     dept: 'TESTING',
@@ -1590,16 +1589,8 @@ document.addEventListener('keyup',function(e){
 function togglePw(inputId,btn){
   const inp=document.getElementById(inputId);
   if(!inp)return;
-  if(inp.type==='password'){
-    inp.type='text';
-    inp.style.textTransform='none';  // text dikhne par bhi uppercase nahi
-    inp.style.letterSpacing='0.3px';
-    btn.textContent='🙈';btn.style.color='rgba(56,189,248,0.9)';
-  } else {
-    inp.type='password';
-    inp.style.textTransform='none';
-    btn.textContent='👁️';btn.style.color='';
-  }
+  if(inp.type==='password'){inp.type='text';btn.textContent='🙈';btn.style.color='rgba(56,189,248,0.9)';}
+  else{inp.type='password';btn.textContent='👁️';btn.style.color='';}
 }
 (function(){
   function init3D(){
@@ -1651,17 +1642,18 @@ function switchTab(tab){
 }
 function adminLogin(){
   const uRaw=document.getElementById('adm-user').value.trim();
-  const p=document.getElementById('adm-pass').value.trim();
+  const p=document.getElementById('adm-pass').value; // trim mat — Mac ke liye
+  const pTrim=p.trim();
   const err=document.getElementById('adm-err');
-  if(!uRaw||!p){err.textContent='❌ Username aur password daalein!';err.style.display='block';return;}
-  // Main admin — case-insensitive username match, exact password
-  if(uRaw.toUpperCase()===MAIN_ADMIN_USER.toUpperCase()&&p===MAIN_ADMIN_PASS){
+  if(!uRaw||!pTrim){err.textContent='❌ Username aur password daalein!';err.style.display='block';return;}
+  // Main admin — case insensitive username, exact password (trim bhi try)
+  if(uRaw.toUpperCase()===MAIN_ADMIN_USER.toUpperCase()&&(p===MAIN_ADMIN_PASS||pTrim===MAIN_ADMIN_PASS)){
     err.style.display='none'; currentRole='mainadmin';
     currentUser={name:MAIN_ADMIN_USER,dept:'MAIN ADMIN',adminId:'mainadmin',perms:{}};
     scheduleAllReminders(); startApp(); return;
   }
-  // Sub-admin — case-insensitive username, exact password
-  const adm=admins.find(a=>a.username&&a.username.toLowerCase()===uRaw.toLowerCase()&&a.password===p);
+  // Sub-admin — case insensitive username, exact password
+  const adm=admins.find(a=>a.username&&a.username.toLowerCase()===uRaw.toLowerCase()&&(a.password===p||a.password===pTrim));
   if(adm){
     err.style.display='none'; currentRole='admin';
     currentUser={name:adm.name,dept:adm.dept||'ADMIN',adminId:adm.id,perms:adm.perms||{}};
@@ -1671,14 +1663,23 @@ function adminLogin(){
   document.getElementById('adm-pass').value='';
 }
 function staffLogin(){
-  const n=document.getElementById('st-name').value.trim();
-  const p=document.getElementById('st-pass').value.trim();
+  const nRaw=document.getElementById('st-name').value.trim();
+  const p=document.getElementById('st-pass').value; // trim mat karo — Mac pe trailing space aa sakta hai
   const err=document.getElementById('st-err');
-  if(!n||!p){err.textContent='❌ Name aur password daalein!';err.style.display='block';return;}
-  const emp=employees.find(e=>e.name===n&&(e.password===p||e.password===p.toUpperCase()));
-  if(!emp){err.textContent='❌ Name ya Password galat hai!';err.style.display='block';document.getElementById('st-pass').value='';return;}
-  err.style.display='none'; savedStaffName=n; sv('hops-saved-staff-name',savedStaffName);
-  currentRole='staff'; currentUser={name:emp.name,dept:emp.dept,empId:emp.id,perms:{}};
+  if(!nRaw||!p){err.textContent='❌ Username aur password daalein!';err.style.display='block';return;}
+  const nUp=nRaw.toUpperCase();
+  // Username ya Name dono se match — password exact (case sensitive)
+  const emp=employees.find(e=>{
+    const nameMatch=e.name===nUp||e.name===nRaw;
+    const usernameMatch=e.username&&(e.username===nRaw||e.username.toLowerCase()===nRaw.toLowerCase());
+    if(!nameMatch&&!usernameMatch)return false;
+    // Password: exact match first, phir trim karke try karo (Mac ke liye)
+    return e.password===p||e.password===p.trim();
+  });
+  if(!emp){err.textContent='❌ Username ya Password galat hai!';err.style.display='block';document.getElementById('st-pass').value='';return;}
+  err.style.display='none';
+  savedStaffName=emp.name; sv('hops-saved-staff-name',savedStaffName);
+  currentRole='staff'; currentUser={name:emp.name,dept:emp.dept,empId:emp.id,username:emp.username||emp.name,perms:{}};
   startApp();
 }
 function logout(){
@@ -1713,15 +1714,15 @@ function buildSidebar(){
   let nav=`<div class="nav-group">OVERVIEW</div><div class="nav-item" id="nav-dashboard" onclick="goTo('dashboard')" data-tip="Aaj ki summary">📊 <span>Dashboard</span></div>`;
   if(isMain||isAdmin){
     if(isMain||hasPerm('tasks_view'))nav+=`<div class="nav-group">TASKS & CHECKLISTS</div><div class="nav-item" id="nav-tasks" onclick="goTo('tasks')" data-tip="Saare tasks">✅ <span>Manage Tasks</span><span class="nav-dot" id="nb-tasks">0</span></div>`;
-    if(isMain||hasPerm('checklist_view'))nav+=`<div class="nav-item" id="nav-checklist" onclick="goTo('checklist')" data-tip="Department checklist">📋 <span>Checklists</span><span class="nav-dot" id="nb-checklist"></span></div>`;
+    if(isMain||hasPerm('checklist_view'))nav+=`<div class="nav-item" id="nav-checklist" onclick="goTo('checklist')" data-tip="Department checklist">📋 <span>Checklists</span></div>`;
     if(isMain||hasPerm('issues_view'))nav+=`<div class="nav-group">ISSUES</div><div class="nav-item" id="nav-issues" onclick="goTo('issues')" data-tip="Issues track karein">⚠️ <span>Issues</span><span class="nav-dot" id="nb-issues">0</span></div>`;
     if(isMain||hasPerm('escalation_view'))nav+=`<div class="nav-item" id="nav-escalation" onclick="goTo('escalation')" data-tip="Escalation">🔺 <span>Escalation</span><span class="nav-dot" id="nb-escalation"></span></div>`;
-    if(isMain||hasPerm('employees_view'))nav+=`<div class="nav-group">STAFF & DEPTS</div><div class="nav-item" id="nav-employees" onclick="goTo('employees')" data-tip="Staff list">👥 <span>Employees</span><span class="nav-dot" id="nb-employees"></span></div>`;
+    if(isMain||hasPerm('employees_view'))nav+=`<div class="nav-group">STAFF & DEPTS</div><div class="nav-item" id="nav-employees" onclick="goTo('employees')" data-tip="Staff list">👥 <span>Employees</span></div>`;
     if(isMain||hasPerm('handover_view'))nav+=`<div class="nav-item" id="nav-handover" onclick="goTo('handover')" data-tip="Handover records">🔄 <span>Handover</span><span class="nav-dot" id="nb-handover"></span></div>`;
     if(isMain||hasPerm('departments_view'))nav+=`<div class="nav-item" id="nav-departments" onclick="goTo('departments')" data-tip="Departments">🏢 <span>Departments</span></div>`;
     if(isMain||hasPerm('delegation_view'))nav+=`<div class="nav-group">DELEGATION</div><div class="nav-item" id="nav-delegation" onclick="goTo('delegation')" data-tip="Delegation Tracker">📤 <span>Delegation</span><span class="nav-dot" id="nb-delegation">0</span></div>`;
     if(isMain||hasPerm('tracking_view'))nav+=`<div class="nav-item" id="nav-tracking" onclick="goTo('tracking')" data-tip="Live tracking">📈 <span>Live Tracking</span></div>`;
-    if(isMain)nav+=`<div class="nav-group">MAIN ADMIN</div><div class="nav-item" id="nav-admins" onclick="goTo('admins')" data-tip="Admin list">👨‍💼 <span>Admin List</span><span class="nav-dot" id="nb-admins"></span></div><div class="nav-item" id="nav-activity" onclick="goTo('activity')" data-tip="Activity log">📜 <span>Activity Log</span></div>`;
+    if(isMain)nav+=`<div class="nav-group">MAIN ADMIN</div><div class="nav-item" id="nav-admins" onclick="goTo('admins')" data-tip="Admin list">👨‍💼 <span>Admin List</span></div><div class="nav-item" id="nav-activity" onclick="goTo('activity')" data-tip="Activity log">📜 <span>Activity Log</span></div>`;
     if(isMain)nav+=`<div class="nav-item" id="nav-mis" onclick="goTo('mis')" data-tip="MIS Reporting — Date wise">📑 <span>MIS Reporting</span></div>`;
     else if(hasPerm('mis_view'))nav+=`<div class="nav-group">REPORTS</div><div class="nav-item" id="nav-mis" onclick="goTo('mis')" data-tip="MIS Reporting — Date wise">📑 <span>MIS Reporting</span></div>`;
     if(isMain||hasPerm('trash_view'))nav+=`<div class="nav-group">SYSTEM</div><div class="nav-item" id="nav-trash" onclick="goTo('trash')" data-tip="Trash">🗑️ <span>Trash</span></div>`;
@@ -1730,11 +1731,12 @@ function buildSidebar(){
   }
   if(isStaff){
     nav+=`<div class="nav-group">MY WORK</div><div class="nav-item" id="nav-my-tasks" onclick="goTo('my-tasks')" data-tip="Mere tasks">✅ <span>My Tasks</span><span class="nav-dot" id="nb-my-tasks">0</span></div>
+    <div class="nav-item" id="nav-assign-task" onclick="goTo('assign-task')" data-tip="Kisi ko task assign karein">📋 <span>Assign Task</span></div>
     <div class="nav-group">REPORT</div>
     <div class="nav-item" id="nav-report-issue" onclick="goTo('report-issue')" data-tip="Problem report karein">⚠️ <span>Report Problem</span></div>
     <div class="nav-item" id="nav-all-issues" onclick="goTo('all-issues')" data-tip="Saare issues">📋 <span>All Issues</span><span class="nav-dot" id="nb-all-issues"></span></div>
     <div class="nav-item" id="nav-my-handover" onclick="goTo('my-handover')" data-tip="Handover form">🔄 <span>Handover Form</span></div>
-    <div class="nav-item" id="nav-my-delegation" onclick="goTo('my-delegation')" data-tip="Mere delegations">📤 <span>My Delegations</span><span class="nav-dot" id="nb-my-delegation"></span></div>
+    <div class="nav-item" id="nav-my-delegation" onclick="goTo('my-delegation')" data-tip="Mere delegations">📤 <span>My Delegations</span></div>
     <div class="nav-group">TOOLS</div>
     <div class="nav-item" id="nav-link-box" onclick="goTo('link-box')" data-tip="Apne links yahan rakhein">🔗 <span>Link Box</span></div>
     <div class="nav-item" id="nav-settings" onclick="goTo('settings')" data-tip="Password change karein">⚙️ <span>Settings</span></div>`;
@@ -1742,7 +1744,7 @@ function buildSidebar(){
   document.getElementById('sidebar-nav').innerHTML=nav;
 }
 
-const PAGE_TITLES={dashboard:'Dashboard',tasks:'Manage Tasks',checklist:'Department Checklists',issues:'Issues / Problems',escalation:'Escalation Tracker',handover:'Staff Handover Log',employees:'Employee List',departments:'Departments',tracking:'Live Tracking Dashboard',settings:'Settings',trash:'Trash (Auto-Delete After 1 Year)',admins:'Admin List',activity:'Activity Log','my-tasks':'My Tasks','report-issue':'Report a Problem','all-issues':'All Issues','my-handover':'Handover Form',mis:'MIS Reporting',delegation:'Delegation Tracker','my-delegation':'My Delegations','link-box':'🔗 Link Box'};
+const PAGE_TITLES={dashboard:'Dashboard',tasks:'Manage Tasks','assign-task':'Assign Task',checklist:'Department Checklists',issues:'Issues / Problems',escalation:'Escalation Tracker',handover:'Staff Handover Log',employees:'Employee List',departments:'Departments',tracking:'Live Tracking Dashboard',settings:'Settings',trash:'Trash (Auto-Delete After 1 Year)',admins:'Admin List',activity:'Activity Log','my-tasks':'My Tasks','report-issue':'Report a Problem','all-issues':'All Issues','my-handover':'Handover Form',mis:'MIS Reporting',delegation:'Delegation Tracker','my-delegation':'My Delegations','link-box':'🔗 Link Box'};
 
 function goTo(pg){
   currentPage=pg;
@@ -1775,6 +1777,7 @@ function buildTopbarBtn(pg){
   else if(pg==='delegation')html=`${(isMain||hasPerm('delegation_add'))?'<button class="btn btn-blue" onclick="openDelMod()">➕ New Delegation</button>':''}${ax}`;
   else if(pg==='my-delegation')html=ax;
   else if(pg==='link-box')html=`<button class="btn btn-teal" onclick="openLinkMod()">＋ New Link</button>`;
+  else if(pg==='assign-task')html=`<button class="btn btn-teal" onclick="openMod('m-task')">＋ New Task</button>`;
   else html=ax;
   document.getElementById('topbar-right').innerHTML=html;
 }
@@ -1811,12 +1814,6 @@ function updateBadges(){
   set('nb-escalation',escalPend);
   set('nb-all-issues',issCnt);
   set('nb-my-delegation',myDelPend);
-  // Checklist: pending tasks count
-  const checkPend=(currentRole==='admin'||currentRole==='mainadmin')?tasks.filter(t=>t.status==='pending').length:0;
-  set('nb-checklist',checkPend);
-  // Employees & Admins total count
-  set('nb-employees',employees.length);
-  set('nb-admins',admins.length);
 }
 
 function bdg(v,t){
@@ -2443,7 +2440,7 @@ function openDoneProof(tid){
   const t=tasks.find(x=>x.id===tid);if(!t)return;
   document.getElementById('dp-task').value=t.name;
   document.getElementById('dp-scheduled').value=(t.schedDate?fDate(t.schedDate):'NOT SET')+(t.time?' — '+t.time:'');
-  document.getElementById('dp-time').value=fDate(toDay())+' — '+fTime();
+  document.getElementById('dp-time').value=fTime();
   document.getElementById('dp-tid').value=tid;
   document.getElementById('dp-remark').value='';
   // Delay check: date se
@@ -2466,7 +2463,7 @@ function submitDone(){
     t.completionHistory.push({
       doneBy: currentUser.name,
       doneDate: toDay(),
-      doneTime: fDate(toDay())+' — '+fTime(),
+      doneTime: fTime(),
       remark: remark,
       isDelayed: isDelayed,
       delayReason: isDelayed?delayReason:'',
@@ -2475,7 +2472,7 @@ function submitDone(){
     // Current status update
     t.status='done';
     t.doneBy=currentUser.name;
-    t.doneTime=fDate(toDay())+' — '+fTime();
+    t.doneTime=fTime();
     t.doneRemark=remark;
     t.isDelayed=isDelayed;
     t.delayReason=isDelayed?delayReason:'';
@@ -3491,6 +3488,61 @@ function saveStaffPwd(){
 }
 
 // RENDER PAGES
+// ═══════════════════════════════════════════════════════
+// STAFF ASSIGN TASK PAGE
+// Staff kisi bhi staff ko task assign kar sakta hai
+// Sirf jo usne assign kiye — wo usko dikhenge
+// ═══════════════════════════════════════════════════════
+function staffAssignTaskPage(){
+  // Staff ke assign kiye tasks — jo usne create kiye
+  const myCreated=tasks.filter(t=>t.createdBy===currentUser.name);
+  return`<div class="sec-head"><h2>📋 Assign Task</h2><button class="btn btn-teal" onclick="openMod('m-task')">＋ New Task</button></div>
+  <div class="alrt alrt-blue">Aap yahan kisi bhi staff ko task assign kar sakte hain. Sirf aapke assign kiye gaye tasks yahan dikhenge.</div>
+  <div class="fbar">
+    <div class="search-wrap"><input id="st-ts-s" placeholder="SEARCH..." oninput="filterStaffTasks()"></div>
+    <select id="st-ts-st" onchange="filterStaffTasks()"><option value="">ALL STATUS</option><option value="pending">PENDING</option><option value="done">DONE</option></select>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden;"><div class="tbl-wrap"><table>
+    <thead><tr><th>Status</th><th>Task</th><th>Dept</th><th>Assigned To</th><th>Frequency</th><th>Sched. Date</th><th>Completion</th><th>Actions</th></tr></thead>
+    <tbody id="st-t-tbody"></tbody>
+  </table></div></div>`;
+}
+
+function filterStaffTasks(){
+  const s=(document.getElementById('st-ts-s')?.value||'').toUpperCase();
+  const st=document.getElementById('st-ts-st')?.value||'';
+  // Sirf jo staff ne create kiye
+  const myCreated=tasks.filter(t=>t.createdBy===currentUser.name);
+  const fl=myCreated.filter(t=>{
+    if(s&&!t.name.toUpperCase().includes(s))return false;
+    if(st&&t.status!==st)return false;
+    return true;
+  });
+  const tb=document.getElementById('st-t-tbody');if(!tb)return;
+  tb.innerHTML=fl.length?fl.map(t=>{
+    const late=wasCompletedLate(t),isDelayed=t.status==='done'&&late;
+    const sb=t.status==='done'&&!late?'<span class="badge bg-green">✅ ON TIME</span>':isDelayed?'<span class="badge bg-purple">⏰ DELAYED</span>':t.priority==='high'?'<span class="badge bg-red">⚠️ PENDING</span>':'<span class="badge bg-gold">⏳ PENDING</span>';
+    let di='—';
+    if(t.doneBy){
+      di=`<strong>${t.doneBy}</strong><br><span style="font-size:10.5px;color:var(--teal);">${t.doneTime||''}</span>`;
+      if(isDelayed&&t.delayReason)di+=`<br><span style="font-size:10px;color:var(--purple);">${t.delayReason.slice(0,40)}</span>`;
+    }
+    return`<tr class="clickable-task" onclick="openTaskDetail('${t.id}')">
+      <td>${sb}</td>
+      <td><strong>${t.name}</strong>${t.assignedTo&&t.assignedTo.length?`<br><span style="font-size:10.5px;color:var(--blue);">👤 ${t.assignedTo.join('+')}</span>`:''}</td>
+      <td>${dTag(t.dept)}</td>
+      <td style="font-size:12px;">${t.assignedTo&&t.assignedTo.length?t.assignedTo.join('<br>'):'—'}</td>
+      <td><span class="badge bg-gray">${FREQ_LABELS[t.freq]||t.freq.toUpperCase()}</span></td>
+      <td style="font-size:12px;color:var(--teal);font-weight:700;">${t.schedDate?fDate(t.schedDate)+(t.time?'<br><span style="font-size:11px;">⏰ '+t.time+'</span>':''):'—'}</td>
+      <td style="font-size:11px;">${di}</td>
+      <td onclick="event.stopPropagation()"><div class="agroup">
+        <button class="ibtn" onclick="editTask('${t.id}')">✏️</button>
+        <button class="ibtn del" onclick="openTrashConfirm('task','${t.id}','${t.name.replace(/'/g,"\\'")}')">🗑️</button>
+      </div></td>
+    </tr>`;
+  }).join(''):`<tr><td colspan="8"><div class="empty"><div class="ico">📋</div><p>KOI TASK NAHI MILA</p></div></td></tr>`;
+}
+
 function renderPage(pg){
   const c=document.getElementById('main-content');
   const isMain=currentRole==='mainadmin',isAdmin=currentRole==='admin',isStaff=currentRole==='staff';
@@ -3521,6 +3573,7 @@ function renderPage(pg){
     else if(pg==='my-delegation')c.innerHTML=staffMyDelegationPage();
     else if(pg==='link-box')c.innerHTML=linkBoxPage();
     else if(pg==='settings')c.innerHTML=staffSettingsPage();
+    else if(pg==='assign-task'){c.innerHTML=staffAssignTaskPage();setTimeout(()=>filterStaffTasks(),50);}
     else c.innerHTML=`<div class="empty"><div class="ico">🔒</div><p>ACCESS DENIED</p></div>`;
   }
   updateBadges();

@@ -1,11 +1,12 @@
 // ================================================================
 //  supabase_db.js — Hospital Ops System
-//  FULLY FIXED VERSION
+//  FIXED VERSION
 //
-//  Problem jo fix ki:
-//  - Data Supabase se load hota tha but app variables update nahi hote the
-//  - Timing issue: variables exist nahi karte the load ke time
-//  - Ab: DB load hone ke baad app ko forcefully refresh karta hai
+//  Fixes:
+//  1. employees table mein username column add kiya
+//  2. admins table password column NULL na ho
+//  3. Login attempt DB load ke baad hoga (session restore delay fix)
+//  4. updateAppVariable more robust
 // ================================================================
 
 const SB_URL = 'https://jlltvarrtcgzsmqxlssb.supabase.co';
@@ -25,104 +26,251 @@ const TABLES = {
     unpack: r => ({ id: r.id, name: r.name||'', head: r.head||'', contact: r.contact||'' }),
   },
 
+  // ✅ FIX 1: username field add kiya employees mein
   'hops-employees': {
     table: 'employees',
-    pack:   o => ({ id: o.id, name: o.name||'', dept: o.dept||'', designation: o.designation||'', email: o.email||'', password: o.password||'' }),
-    unpack: r => ({ id: r.id, name: r.name||'', dept: r.dept||'', designation: r.designation||'', email: r.email||'', password: r.password||'' }),
+    pack:   o => ({
+      id:          o.id,
+      name:        o.name        || '',
+      username:    o.username    || o.name || '',   // ← username save karo
+      dept:        o.dept        || '',
+      designation: o.designation || '',
+      email:       o.email       || '',
+      password:    o.password    || ''
+    }),
+    unpack: r => ({
+      id:          r.id,
+      name:        r.name        || '',
+      username:    r.username    || r.name || '',   // ← username restore karo
+      dept:        r.dept        || '',
+      designation: r.designation || '',
+      email:       r.email       || '',
+      password:    r.password    || ''
+    }),
   },
 
   'hops-admins': {
     table: 'admins',
-    pack:   o => ({ id: o.id, name: o.name||'', username: o.username||'', email: o.email||'', password: o.password||'', role: o.role||'', dept: o.dept||'', perms: o.perms||{}, created_by: o.createdBy||'' }),
-    unpack: r => ({ id: r.id, name: r.name||'', username: r.username||'', email: r.email||'', password: r.password||'', role: r.role||'', dept: r.dept||'', perms: r.perms||{}, createdBy: r.created_by||'' }),
+    pack:   o => ({
+      id:         o.id,
+      name:       o.name       || '',
+      username:   o.username   || '',
+      email:      o.email      || '',
+      password:   o.password   || '',
+      role:       o.role       || '',
+      dept:       o.dept       || '',
+      perms:      o.perms      || {},
+      created_by: o.createdBy  || ''
+    }),
+    unpack: r => ({
+      id:        r.id,
+      name:      r.name      || '',
+      username:  r.username  || '',
+      email:     r.email     || '',
+      password:  r.password  || '',
+      role:      r.role      || '',
+      dept:      r.dept      || '',
+      perms:     r.perms     || {},
+      createdBy: r.created_by || ''
+    }),
   },
 
   'hops-tasks': {
     table: 'tasks',
     pack: o => ({
-      id: o.id, name: o.name||'', dept: o.dept||'', freq: o.freq||'daily',
-      assigned_to: o.assignedTo||[], assignee_emails: o.assigneeEmails||[],
-      time: o.time||'', sched_date: o.schedDate||'', priority: o.priority||'medium',
-      notes: o.notes||'', last_done: o.lastDone||'', status: o.status||'pending',
-      done_by: o.doneBy||'', done_time: o.doneTime||'', done_remark: o.doneRemark||'',
-      delay_reason: o.delayReason||'', is_delayed: o.isDelayed||false,
-      created: o.created||'', created_by: o.createdBy||'', activity_log: o.activityLog||[]
+      id:              o.id,
+      name:            o.name            || '',
+      dept:            o.dept            || '',
+      freq:            o.freq            || 'daily',
+      assigned_to:     o.assignedTo      || [],
+      assignee_emails: o.assigneeEmails  || [],
+      time:            o.time            || '',
+      sched_date:      o.schedDate       || '',
+      priority:        o.priority        || 'medium',
+      notes:           o.notes           || '',
+      last_done:       o.lastDone        || '',
+      status:          o.status          || 'pending',
+      done_by:         o.doneBy          || '',
+      done_time:       o.doneTime        || '',
+      done_remark:     o.doneRemark      || '',
+      delay_reason:    o.delayReason     || '',
+      is_delayed:      o.isDelayed       || false,
+      created:         o.created         || '',
+      created_by:      o.createdBy       || '',
+      activity_log:    o.activityLog     || []
     }),
     unpack: r => ({
-      id: r.id, name: r.name||'', dept: r.dept||'', freq: r.freq||'daily',
-      assignedTo: r.assigned_to||[], assigneeEmails: r.assignee_emails||[],
-      time: r.time||'', schedDate: r.sched_date||'', priority: r.priority||'medium',
-      notes: r.notes||'', lastDone: r.last_done||'', status: r.status||'pending',
-      doneBy: r.done_by||'', doneTime: r.done_time||'', doneRemark: r.done_remark||'',
-      delayReason: r.delay_reason||'', isDelayed: r.is_delayed||false,
-      created: r.created||'', createdBy: r.created_by||'', activityLog: r.activity_log||[]
+      id:              r.id,
+      name:            r.name            || '',
+      dept:            r.dept            || '',
+      freq:            r.freq            || 'daily',
+      assignedTo:      r.assigned_to     || [],
+      assigneeEmails:  r.assignee_emails || [],
+      time:            r.time            || '',
+      schedDate:       r.sched_date      || '',
+      priority:        r.priority        || 'medium',
+      notes:           r.notes           || '',
+      lastDone:        r.last_done       || '',
+      status:          r.status          || 'pending',
+      doneBy:          r.done_by         || '',
+      doneTime:        r.done_time       || '',
+      doneRemark:      r.done_remark     || '',
+      delayReason:     r.delay_reason    || '',
+      isDelayed:       r.is_delayed      || false,
+      created:         r.created         || '',
+      createdBy:       r.created_by      || '',
+      activityLog:     r.activity_log    || []
     }),
   },
 
   'hops-issues': {
     table: 'issues',
     pack: o => ({
-      id: o.id, title: o.title||'', dept: o.dept||'', priority: o.priority||'medium',
-      reporter: o.reporter||'', assigned: o.assigned||'', description: o.desc||'',
-      status: o.status||'open', date: o.date||'',
-      resolve_remark: o.resolveRemark||'', resolve_by: o.resolveBy||'', resolved_at: o.resolvedAt||null
+      id:             o.id,
+      title:          o.title          || '',
+      dept:           o.dept           || '',
+      priority:       o.priority       || 'medium',
+      reporter:       o.reporter       || '',
+      assigned:       o.assigned       || '',
+      description:    o.desc           || '',
+      status:         o.status         || 'open',
+      date:           o.date           || '',
+      resolve_remark: o.resolveRemark  || '',
+      resolve_by:     o.resolveBy      || '',
+      resolved_at:    o.resolvedAt     || null
     }),
     unpack: r => ({
-      id: r.id, title: r.title||'', dept: r.dept||'', priority: r.priority||'medium',
-      reporter: r.reporter||'', assigned: r.assigned||'', desc: r.description||'',
-      status: r.status||'open', date: r.date||'',
-      resolveRemark: r.resolve_remark||'', resolveBy: r.resolve_by||'', resolvedAt: r.resolved_at||''
+      id:            r.id,
+      title:         r.title          || '',
+      dept:          r.dept           || '',
+      priority:      r.priority       || 'medium',
+      reporter:      r.reporter       || '',
+      assigned:      r.assigned       || '',
+      desc:          r.description    || '',
+      status:        r.status         || 'open',
+      date:          r.date           || '',
+      resolveRemark: r.resolve_remark || '',
+      resolveBy:     r.resolve_by     || '',
+      resolvedAt:    r.resolved_at    || ''
     }),
   },
 
   'hops-handovers': {
     table: 'handovers',
     pack: o => ({
-      id: o.id, name: o.name||'', designation: o.designation||'', dept: o.dept||'',
-      date: o.date||'', handover_to: o.to||'', tasks: o.tasks||'',
-      pending: o.pending||'', supervisor: o.sup||o.supervisor||'',
-      status: o.status||'pending', created_by: o.createdBy||''
+      id:           o.id,
+      name:         o.name          || '',
+      designation:  o.designation   || '',
+      dept:         o.dept          || '',
+      date:         o.date          || '',
+      handover_to:  o.to            || '',
+      tasks:        o.tasks         || '',
+      pending:      o.pending       || '',
+      supervisor:   o.sup || o.supervisor || '',
+      status:       o.status        || 'pending',
+      created_by:   o.createdBy     || ''
     }),
     unpack: r => ({
-      id: r.id, name: r.name||'', designation: r.designation||'', dept: r.dept||'',
-      date: r.date||'', to: r.handover_to||'', tasks: r.tasks||'',
-      pending: r.pending||'', sup: r.supervisor||'', supervisor: r.supervisor||'',
-      status: r.status||'pending', createdBy: r.created_by||''
+      id:          r.id,
+      name:        r.name          || '',
+      designation: r.designation   || '',
+      dept:        r.dept          || '',
+      date:        r.date          || '',
+      to:          r.handover_to   || '',
+      tasks:       r.tasks         || '',
+      pending:     r.pending       || '',
+      sup:         r.supervisor    || '',
+      supervisor:  r.supervisor    || '',
+      status:      r.status        || 'pending',
+      createdBy:   r.created_by    || ''
     }),
   },
 
   'hops-delegations': {
     table: 'delegations',
     pack: o => ({
-      id: o.id, task_name: o.taskName||'', dept: o.dept||'', priority: o.priority||'medium',
-      doer_id: o.doerId||'', doer_name: o.doerName||'',
-      delegated_by: o.delegatedBy||'', exp_date: o.expDate||'', exp_time: o.expTime||'',
-      notes: o.notes||'', status: o.status||'pending', created_date: o.createdDate||'',
-      actual_date: o.actualDate||'', actual_time: o.actualTime||'',
-      done_remark: o.doneRemark||'', delay_reason: o.delayReason||'',
-      is_delayed: o.isDelayed||false, extensions: o.extensions||[], activity_log: o.activityLog||[]
+      id:            o.id,
+      task_name:     o.taskName     || '',
+      dept:          o.dept         || '',
+      priority:      o.priority     || 'medium',
+      doer_id:       o.doerId       || '',
+      doer_name:     o.doerName     || '',
+      delegated_by:  o.delegatedBy  || '',
+      exp_date:      o.expDate      || '',
+      exp_time:      o.expTime      || '',
+      notes:         o.notes        || '',
+      status:        o.status       || 'pending',
+      created_date:  o.createdDate  || '',
+      actual_date:   o.actualDate   || '',
+      actual_time:   o.actualTime   || '',
+      done_remark:   o.doneRemark   || '',
+      delay_reason:  o.delayReason  || '',
+      is_delayed:    o.isDelayed    || false,
+      extensions:    o.extensions   || [],
+      activity_log:  o.activityLog  || []
     }),
     unpack: r => ({
-      id: r.id, taskName: r.task_name||'', dept: r.dept||'', priority: r.priority||'medium',
-      doerId: r.doer_id||'', doerName: r.doer_name||'',
-      delegatedBy: r.delegated_by||'', expDate: r.exp_date||'', expTime: r.exp_time||'',
-      notes: r.notes||'', status: r.status||'pending', createdDate: r.created_date||'',
-      actualDate: r.actual_date||'', actualTime: r.actual_time||'',
-      doneRemark: r.done_remark||'', delayReason: r.delay_reason||'',
-      isDelayed: r.is_delayed||false, extensions: r.extensions||[], activityLog: r.activity_log||[]
+      id:           r.id,
+      taskName:     r.task_name    || '',
+      dept:         r.dept         || '',
+      priority:     r.priority     || 'medium',
+      doerId:       r.doer_id      || '',
+      doerName:     r.doer_name    || '',
+      delegatedBy:  r.delegated_by || '',
+      expDate:      r.exp_date     || '',
+      expTime:      r.exp_time     || '',
+      notes:        r.notes        || '',
+      status:       r.status       || 'pending',
+      createdDate:  r.created_date || '',
+      actualDate:   r.actual_date  || '',
+      actualTime:   r.actual_time  || '',
+      doneRemark:   r.done_remark  || '',
+      delayReason:  r.delay_reason || '',
+      isDelayed:    r.is_delayed   || false,
+      extensions:   r.extensions   || [],
+      activityLog:  r.activity_log || []
     }),
   },
 
   'hops-actlog': {
     table: 'activity_log',
-    pack:   o => ({ id: o.id, by_user: o.by||'', role: o.role||'', action: o.action||'', details: o.details||'', at_str: o.atStr||'' }),
-    unpack: r => ({ id: r.id, by: r.by_user||'', role: r.role||'', action: r.action||'', details: r.details||'', at: r.created_at||'', atStr: r.at_str||'' }),
+    pack:   o => ({
+      id:       o.id,
+      by_user:  o.by      || '',
+      role:     o.role    || '',
+      action:   o.action  || '',
+      details:  o.details || '',
+      at_str:   o.atStr   || ''
+    }),
+    unpack: r => ({
+      id:     r.id,
+      by:     r.by_user   || '',
+      role:   r.role      || '',
+      action: r.action    || '',
+      details:r.details   || '',
+      at:     r.created_at|| '',
+      atStr:  r.at_str    || ''
+    }),
   },
 
   'hops-trash': {
     table: 'trash',
-    pack:   o => ({ id: o.id, type: o.type||'', data: o.data||{}, deleted_by: o.deletedBy||'', deleted_at: o.deletedAt||new Date().toISOString(), auto_delete_at: o.autoDeleteAt||'' }),
-    unpack: r => ({ id: r.id, type: r.type||'', data: r.data||{}, deletedBy: r.deleted_by||'', deletedAt: r.deleted_at||'', autoDeleteAt: r.auto_delete_at||'' }),
+    pack:   o => ({
+      id:             o.id,
+      type:           o.type          || '',
+      data:           o.data          || {},
+      deleted_by:     o.deletedBy     || '',
+      deleted_at:     o.deletedAt     || new Date().toISOString(),
+      auto_delete_at: o.autoDeleteAt  || ''
+    }),
+    unpack: r => ({
+      id:           r.id,
+      type:         r.type           || '',
+      data:         r.data           || {},
+      deletedBy:    r.deleted_by     || '',
+      deletedAt:    r.deleted_at     || '',
+      autoDeleteAt: r.auto_delete_at || ''
+    }),
   },
 
 };
@@ -134,7 +282,6 @@ function linkUsernameFromKey(key) { return key.replace('hops-links-', ''); }
 
 // ================================================================
 //  updateAppVariable() — DB data seedha app variables mein daalo
-//  RETRY logic: agar variable abhi exist nahi karta, wait karo
 // ================================================================
 function updateAppVariable(key, data) {
   const varMap = {
@@ -151,29 +298,26 @@ function updateAppVariable(key, data) {
   const varName = varMap[key];
   if (!varName) return;
 
-  // Direct assign agar variable exist karta hai
   if (typeof window[varName] !== 'undefined') {
     window[varName] = data;
     return;
   }
 
-  // Variable abhi nahi hai — retry karo 10 baar (100ms gap)
   let tries = 0;
   const retry = setInterval(() => {
     tries++;
     if (typeof window[varName] !== 'undefined') {
       window[varName] = data;
       clearInterval(retry);
-    } else if (tries >= 10) {
+    } else if (tries >= 20) {
       clearInterval(retry);
-      // Force assign karo anyway
       window[varName] = data;
     }
   }, 100);
 }
 
 // ================================================================
-//  ld() — LOAD FUNCTION (localStorage se padho)
+//  ld() — LOAD FUNCTION
 // ================================================================
 window.ld = function(key, defaultVal) {
   try {
@@ -192,24 +336,25 @@ window.sv = async function(key, val) {
   // Step 1: localStorage mein turant save
   try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {}
 
-  // Step 2: Supabase mein save (agar ready hai)
+  // Step 2: Supabase mein save
   if (!_ready || !_sb) return;
 
-  // USER LINKS special handling
+  // USER LINKS
   if (isLinkKey(key)) {
     if (!Array.isArray(val)) return;
     const username = linkUsernameFromKey(key);
     try {
-      // Sirf insert/upsert — delete automatic nahi hoga
       if (val.length > 0) {
         const rows = val.map(o => ({
-          id: o.id, username, name: o.name||'',
-          url: o.url||'', emoji: o.emoji||'🔗',
-          added_at: o.addedAt||new Date().toISOString()
+          id:       o.id,
+          username,
+          name:     o.name     || '',
+          url:      o.url      || '',
+          emoji:    o.emoji    || '🔗',
+          added_at: o.addedAt  || new Date().toISOString()
         }));
         const { error } = await _sb.from(LINKS_TABLE).upsert(rows, { onConflict: 'id' });
         if (error) console.error('❌ Links save error:', error.message);
-        else console.log('✅ Links saved ['+key+'] —', val.length);
       }
     } catch(e) { console.error('❌ Links exception:', e.message||e); }
     return;
@@ -220,8 +365,6 @@ window.sv = async function(key, val) {
   if (!Array.isArray(val)) return;
 
   try {
-    // Sirf upsert karo — delete kabhi automatic nahi hoga
-    // Delete sirf Supabase dashboard se manually karna hoga
     if (val.length > 0) {
       const rows = val.map(cfg.pack);
       const { error: upsertErr } = await _sb.from(cfg.table).upsert(rows, { onConflict: 'id' });
@@ -273,8 +416,11 @@ window.loadUserLinks = async function() {
     const { data, error } = await _sb.from(LINKS_TABLE).select('*').eq('username', username);
     if (error) { console.warn('⚠️ Links load error:', error.message); return; }
     const links = (data||[]).map(r => ({
-      id: r.id, name: r.name||'', url: r.url||'',
-      emoji: r.emoji||'🔗', addedAt: r.added_at||''
+      id:      r.id,
+      name:    r.name    || '',
+      url:     r.url     || '',
+      emoji:   r.emoji   || '🔗',
+      addedAt: r.added_at|| ''
     }));
     localStorage.setItem('hops-links-'+username, JSON.stringify(links));
     console.log('✅ Links loaded ['+username+'] —', links.length);
@@ -282,10 +428,10 @@ window.loadUserLinks = async function() {
 };
 
 // ================================================================
-//  setupRealtime() — Live changes dikh'en
+//  setupRealtime() — Live changes
 // ================================================================
 function setupRealtime() {
-  const realtimeTables = ['tasks', 'issues', 'departments', 'employees', 'delegations'];
+  const realtimeTables = ['tasks', 'issues', 'departments', 'employees', 'delegations', 'admins'];
 
   realtimeTables.forEach(tableName => {
     _sb.channel('rt-' + tableName)
@@ -312,18 +458,54 @@ function setupRealtime() {
 }
 
 // ================================================================
-//  INIT — Page load hote hi shuru hota hai
+//  dbDelete() — Supabase DB se record permanently delete karo
+// ================================================================
+window.dbDelete = async function(type, id) {
+  if (!_ready || !_sb) {
+    console.warn('⚠️ DB not ready — delete skipped for', type, id);
+    return;
+  }
+
+  const tableMap = {
+    'task':       'tasks',
+    'issue':      'issues',
+    'employee':   'employees',
+    'dept':       'departments',
+    'admin':      'admins',
+    'handover':   'handovers',
+    'delegation': 'delegations',
+  };
+
+  const tableName = tableMap[type];
+  if (!tableName) {
+    console.warn('⚠️ Unknown type for DB delete:', type);
+    return;
+  }
+
+  try {
+    const { error } = await _sb.from(tableName).delete().eq('id', id);
+    if (error) {
+      console.error('❌ DB Delete error ['+type+']:', error.message);
+    } else {
+      console.log('✅ DB se delete ho gaya ['+type+'] id:', id);
+    }
+  } catch(e) {
+    console.error('❌ dbDelete exception:', e.message || e);
+  }
+};
+
+// ================================================================
+//  INIT — Page load pe shuru hota hai
 // ================================================================
 (async function startDB() {
 
-  // Loading bar
   const bar = document.createElement('div');
   bar.id = 'db-loading-bar';
   Object.assign(bar.style, {
-    position:'fixed', top:'0', left:'0', right:'0', zIndex:'99999',
-    background:'#0b4d6b', color:'#fff', textAlign:'center',
-    padding:'11px', fontFamily:'Inter,sans-serif',
-    fontSize:'13px', fontWeight:'700', letterSpacing:'0.3px'
+    position: 'fixed', top: '0', left: '0', right: '0', zIndex: '99999',
+    background: '#0b4d6b', color: '#fff', textAlign: 'center',
+    padding: '11px', fontFamily: 'Inter,sans-serif',
+    fontSize: '13px', fontWeight: '700', letterSpacing: '0.3px'
   });
   bar.textContent = '⏳ Database se connect ho raha hai...';
   document.body.appendChild(bar);
@@ -361,14 +543,16 @@ function setupRealtime() {
     bar.textContent = '✅ Database connected! Data load ho gaya.';
     setTimeout(() => bar.remove(), 2500);
 
-    // Step 7: App refresh karo fresh data ke saath
+    // ✅ FIX 2: DB load hone ke BAAD session restore karo
+    // Pehle app variables mein fresh data aa chuka hai — ab login safe hai
     if (typeof currentRole !== 'undefined' && currentRole) {
-      // User pehle se login hai — page aur badges dono refresh karo
+      // User pehle se login hai — refresh karo
       if (typeof renderPage === 'function') renderPage(currentPage);
       if (typeof updateBadges === 'function') updateBadges();
       if (typeof buildSidebar === 'function') buildSidebar();
     } else {
-      // Session restore karo
+      // ✅ FIX 3: Session restore — DB data load hone ke baad try karo
+      // Agar auto-restore pehle fail hua tha, ab fresh try karo
       if (typeof loadSession === 'function' && loadSession()) {
         if (currentRole === 'mainadmin' && typeof scheduleAllReminders === 'function') {
           scheduleAllReminders();
@@ -383,43 +567,5 @@ function setupRealtime() {
     bar.textContent = '❌ Database Error: ' + err.message + ' — Offline mode mein chal raha hai';
     setTimeout(() => bar.remove(), 7000);
   }
-
-// ================================================================
-//  dbDelete() — Supabase DB se record permanently delete karo
-//  type → 'task','issue','employee','dept','admin','handover'
-// ================================================================
-window.dbDelete = async function(type, id) {
-  if (!_ready || !_sb) {
-    console.warn('⚠️ DB not ready — delete skipped for', type, id);
-    return;
-  }
-
-  const tableMap = {
-    'task':      'tasks',
-    'issue':     'issues',
-    'employee':  'employees',
-    'dept':      'departments',
-    'admin':     'admins',
-    'handover':  'handovers',
-    'delegation':'delegations',
-  };
-
-  const tableName = tableMap[type];
-  if (!tableName) {
-    console.warn('⚠️ Unknown type for DB delete:', type);
-    return;
-  }
-
-  try {
-    const { error } = await _sb.from(tableName).delete().eq('id', id);
-    if (error) {
-      console.error('❌ DB Delete error ['+type+']:', error.message);
-    } else {
-      console.log('✅ DB se delete ho gaya ['+type+'] id:', id);
-    }
-  } catch(e) {
-    console.error('❌ dbDelete exception:', e.message || e);
-  }
-};
 
 })();

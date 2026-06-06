@@ -406,12 +406,14 @@ tbody tr:hover{background:#f8fbff;}
   .topbar-title{font-size:16px !important;}
 
   /* --- SIDEBAR FOOTER (logout etc.) --- */
+  .sidebar{display:flex !important;flex-direction:column !important;}
+  .sidebar-nav{flex:1 !important;overflow-y:auto !important;min-height:0 !important;}
   .sidebar-foot{
+    flex-shrink:0 !important;
     display:flex !important;
     flex-direction:column !important;
     padding:12px !important;
     border-top:1px solid rgba(255,255,255,0.07) !important;
-    margin-top:auto !important;
   }
   .logout-btn{
     display:block !important;

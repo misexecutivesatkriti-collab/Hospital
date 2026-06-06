@@ -334,278 +334,309 @@ tbody tr:hover{background:#f8fbff;}
 .del-card.dc-delayed{border-left-color:var(--purple);}
 .del-card.dc-extended{border-left-color:var(--orange);}
 /* ================================================================
-   RESPONSIVE PATCH v2 — Mobile & Tablet Only
-   Desktop (769px+) mein ZERO changes
+   RESPONSIVE PATCH v3 — Mobile & Tablet Only
+   Desktop 769px+ mein ZERO change
 ================================================================ */
 
-/* ── Sidebar backdrop overlay ── */
+/* Sidebar backdrop */
 .sidebar-backdrop{
   display:none;
-  position:fixed;inset:0;
-  background:rgba(10,22,40,0.6);
-  z-index:150;
-  -webkit-backdrop-filter:blur(2px);
-  backdrop-filter:blur(2px);
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.55);
+  z-index:199;
 }
 .sidebar-backdrop.show{display:block;}
 
-/* ── Hamburger: desktop pe hide ── */
-.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:6px;background:none;border:none;flex-shrink:0;}
-.hamburger span{width:20px;height:2px;background:var(--navy);border-radius:2px;display:block;}
-
-/* ================================================================
-   TABLET — max 768px
-   Sidebar hidden, hamburger visible, content full width
-================================================================ */
-@media(max-width:768px){
-
-  /* Sidebar: off-canvas */
-  :root{--sidebar:0px;}
-  .sidebar{
-    width:260px;
-    transform:translateX(-260px);
-    transition:transform 0.26s ease;
-    z-index:200;
-    position:fixed;
-    height:100vh;
-    top:0;left:0;
-  }
-  .sidebar.open{transform:translateX(0);}
-
-  /* Main content: full width */
-  .main{margin-left:0!important;}
-
-  /* Topbar */
-  .hamburger{display:flex!important;}
-  .topbar{padding:0 14px;height:52px;}
-  .topbar-title{font-size:16px;}
-  .topbar-right{gap:5px;}
-
-  /* Logout button fix */
-  .logout-btn{
-    display:block!important;
-    width:100%;
-    margin-top:8px;
-    padding:9px 10px;
-    border-radius:8px;
-    border:1px solid rgba(255,255,255,0.15);
-    background:rgba(255,255,255,0.06);
-    color:rgba(255,255,255,0.7);
-    font-family:'Nunito',sans-serif;
-    font-size:12px;
-    font-weight:700;
-    cursor:pointer;
-    text-align:center;
-  }
-  .logout-btn:hover{background:rgba(255,255,255,0.12);color:white;}
-
-  /* Sidebar foot always visible */
-  .sidebar-foot{display:flex!important;flex-direction:column;padding:12px;}
-
-  /* Stats grid: 2 columns */
-  .stats-grid{grid-template-columns:repeat(2,1fr);gap:10px;}
-
-  /* Content padding */
-  .content{padding:16px;}
-
-  /* Cards */
-  .card{padding:14px;margin-bottom:14px;}
-
-  /* Form grid: single column */
-  .fgrid{grid-template-columns:1fr!important;}
-  .full{grid-column:1!important;}
-
-  /* Tables: horizontal scroll */
-  .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
-  .tbl-wrap table{min-width:500px;}
-  tbody td{font-size:12px;padding:9px 11px;}
-  thead th{font-size:10px;padding:8px 11px;}
-
-  /* Filter bar: wrap */
-  .fbar{flex-wrap:wrap;gap:8px;}
-  .fbar input,.fbar select{min-width:120px;flex:1 1 120px;}
-  .search-wrap{min-width:160px;flex:1 1 160px;}
-
-  /* Track grid: 2 col */
-  .track-grid{grid-template-columns:repeat(2,1fr);}
-
-  /* MIS summary: 3 col */
-  #mis-summary{grid-template-columns:repeat(3,1fr)!important;}
-
-  /* Perm grid: single */
-  .perm-grid{grid-template-columns:1fr;}
-
-  /* Section head */
-  .sec-head{flex-direction:column;align-items:flex-start;gap:8px;}
-  .sec-head h2{font-size:17px;}
-
-  /* Modal */
-  .moverlay{padding:16px;align-items:center;}
-  .modal{border-radius:14px;}
+/* Hamburger — default hide (desktop) */
+.hamburger{
+  display:none;
+  flex-direction:column;
+  gap:5px;
+  cursor:pointer;
+  padding:6px;
+  background:none;
+  border:none;
+  flex-shrink:0;
+}
+.hamburger span{
+  width:20px;height:2px;
+  background:var(--navy);
+  border-radius:2px;
+  display:block;
 }
 
 /* ================================================================
-   MOBILE — max 600px
+   TABLET + MOBILE  ≤ 768px
+================================================================ */
+@media(max-width:768px){
+
+  /* --- LAYOUT --- */
+  /* Sidebar: completely hidden off-screen by default */
+  .sidebar{
+    position:fixed !important;
+    top:0 !important;
+    left:0 !important;
+    height:100vh !important;
+    width:270px !important;
+    transform:translateX(-270px) !important;
+    transition:transform 0.25s ease !important;
+    z-index:200 !important;
+    overflow-y:auto !important;
+  }
+
+  /* Sidebar open state */
+  .sidebar.open{
+    transform:translateX(0) !important;
+    box-shadow:4px 0 30px rgba(0,0,0,0.35) !important;
+  }
+
+  /* Main content: full width, no left margin */
+  .main{
+    margin-left:0 !important;
+    width:100% !important;
+  }
+
+  /* --- TOPBAR --- */
+  .hamburger{display:flex !important;}
+  .topbar{
+    padding:0 14px !important;
+    height:52px !important;
+  }
+  .topbar-title{font-size:16px !important;}
+
+  /* --- SIDEBAR FOOTER (logout etc.) --- */
+  .sidebar-foot{
+    display:flex !important;
+    flex-direction:column !important;
+    padding:12px !important;
+    border-top:1px solid rgba(255,255,255,0.07) !important;
+    margin-top:auto !important;
+  }
+  .logout-btn{
+    display:block !important;
+    width:100% !important;
+    margin-top:8px !important;
+    padding:9px 12px !important;
+    border-radius:8px !important;
+    border:1px solid rgba(255,255,255,0.15) !important;
+    background:rgba(255,255,255,0.07) !important;
+    color:rgba(255,255,255,0.75) !important;
+    font-family:'Nunito',sans-serif !important;
+    font-size:12px !important;
+    font-weight:700 !important;
+    cursor:pointer !important;
+    text-align:center !important;
+    letter-spacing:0.3px !important;
+  }
+  .logout-btn:hover{
+    background:rgba(255,255,255,0.14) !important;
+    color:white !important;
+  }
+
+  /* --- CONTENT AREA --- */
+  .content{padding:14px !important;}
+
+  /* --- STATS GRID: 2 columns --- */
+  .stats-grid{
+    grid-template-columns:repeat(2,1fr) !important;
+    gap:10px !important;
+  }
+
+  /* --- FORMS --- */
+  .fgrid{grid-template-columns:1fr !important;}
+  .full{grid-column:1 !important;}
+
+  /* --- TABLES --- */
+  .tbl-wrap{overflow-x:auto !important;-webkit-overflow-scrolling:touch;}
+  .tbl-wrap table{min-width:500px !important;}
+  tbody td{font-size:12px !important;padding:9px 10px !important;}
+  thead th{font-size:10px !important;padding:8px 10px !important;}
+
+  /* --- FILTER BAR --- */
+  .fbar{flex-wrap:wrap !important;gap:8px !important;}
+  .fbar input,.fbar select{min-width:120px !important;flex:1 1 120px !important;}
+  .search-wrap{min-width:160px !important;flex:1 1 160px !important;}
+
+  /* --- TRACKING GRID --- */
+  .track-grid{grid-template-columns:repeat(2,1fr) !important;}
+
+  /* --- MIS SUMMARY --- */
+  #mis-summary{grid-template-columns:repeat(3,1fr) !important;}
+
+  /* --- PERMISSIONS --- */
+  .perm-grid{grid-template-columns:1fr !important;}
+
+  /* --- SEC HEAD --- */
+  .sec-head{
+    flex-direction:column !important;
+    align-items:flex-start !important;
+    gap:8px !important;
+  }
+  .sec-head h2{font-size:17px !important;}
+
+  /* --- CARDS --- */
+  .card{padding:14px !important;margin-bottom:14px !important;}
+
+  /* --- MODAL --- */
+  .moverlay{padding:16px !important;align-items:center !important;}
+  .modal{border-radius:14px !important;}
+}
+
+/* ================================================================
+   MOBILE  ≤ 600px
 ================================================================ */
 @media(max-width:600px){
 
-  .sidebar{width:240px;transform:translateX(-240px);}
+  .sidebar{width:250px !important;transform:translateX(-250px) !important;}
+  .sidebar.open{transform:translateX(0) !important;}
 
   /* Topbar */
-  .topbar{padding:0 12px;height:50px;}
-  .topbar-title{font-size:14px;}
+  .topbar{padding:0 12px !important;height:50px !important;}
+  .topbar-title{font-size:14px !important;}
   .topbar-right{
-    gap:4px;
-    max-width:calc(100vw - 160px);
-    overflow-x:auto;
-    flex-wrap:nowrap;
+    gap:4px !important;
+    max-width:calc(100vw - 155px) !important;
+    overflow-x:auto !important;
+    flex-wrap:nowrap !important;
   }
 
   /* Content */
-  .content{padding:12px 12px 70px;}
+  .content{padding:12px 12px 70px !important;}
 
   /* Stats */
-  .stats-grid{grid-template-columns:repeat(2,1fr);gap:8px;}
-  .stat{padding:12px 10px;}
-  .stat-num{font-size:24px;}
-  .stat-lbl{font-size:10px;}
-  .stat-ico{font-size:20px;right:10px;}
+  .stat{padding:12px 10px !important;}
+  .stat-num{font-size:22px !important;}
+  .stat-lbl{font-size:10px !important;}
 
   /* Cards */
-  .card{padding:12px;margin-bottom:12px;}
-  .card-title{font-size:13px;}
+  .card{padding:12px !important;margin-bottom:12px !important;}
+  .card-title{font-size:13px !important;}
 
   /* Login */
-  .login-card{padding:28px 20px;width:95vw;max-width:95vw;}
-  .login-logo .emoji{font-size:42px;}
-  .login-logo h1{font-size:20px;}
-  .login-tab{font-size:11px;padding:9px 6px;}
-
-  /* Alerts */
-  .alrt{font-size:12px;padding:9px 12px;gap:7px;}
-
-  /* Badges */
-  .badge{font-size:10px;padding:2px 8px;}
+  .login-card{padding:28px 20px !important;width:95vw !important;max-width:95vw !important;}
+  .login-logo .emoji{font-size:40px !important;}
+  .login-logo h1{font-size:19px !important;}
+  .login-tab{font-size:11px !important;padding:9px 6px !important;}
 
   /* Buttons */
-  .btn{padding:7px 10px;}
-  .btn-sm{padding:5px 9px;}
+  .btn{padding:7px 10px !important;}
+  .btn-sm{padding:5px 9px !important;}
 
-  /* Task / del / issue cards */
-  .task-card{padding:12px 13px;}
-  .tc-title{font-size:13px;}
-  .del-card{padding:12px 13px;}
-  .issue-report-card{padding:12px;}
+  /* Alerts */
+  .alrt{font-size:12px !important;padding:9px 12px !important;}
 
-  /* Filter bar */
-  .fbar{gap:6px;}
-  .fbar input,.fbar select{font-size:12px;}
+  /* Task/Del/Issue cards */
+  .task-card{padding:12px 13px !important;}
+  .del-card{padding:12px 13px !important;}
+  .issue-report-card{padding:12px !important;}
 
   /* Tables */
-  .tbl-wrap table{min-width:440px;}
-  tbody td{font-size:11.5px;padding:8px 9px;}
-  thead th{font-size:9.5px;padding:7px 9px;}
-
-  /* Sidebar internals */
-  .sidebar-brand{padding:14px 13px;}
-  .sidebar-brand h1{font-size:14px;}
-  .nav-item{font-size:12px;padding:8px 10px;}
-  .nav-group{font-size:8px;padding:10px 8px 3px;}
+  .tbl-wrap table{min-width:440px !important;}
+  tbody td{font-size:11.5px !important;padding:8px 9px !important;}
+  thead th{font-size:9.5px !important;padding:7px 9px !important;}
 
   /* Track grid: 1 col */
-  .track-grid{grid-template-columns:1fr;}
+  .track-grid{grid-template-columns:1fr !important;}
 
   /* MIS: 2 col */
-  #mis-summary{grid-template-columns:repeat(2,1fr)!important;}
+  #mis-summary{grid-template-columns:repeat(2,1fr) !important;}
 
   /* Modal: bottom sheet */
-  .moverlay{padding:0;align-items:flex-end;}
-  .modal{border-radius:20px 20px 0 0;max-width:100%!important;max-height:88vh;}
-  .mbody{padding:14px 16px 28px;}
-  .mhead{padding:14px 18px;}
-
-  /* Link card */
-  .link-card{padding:12px;}
-  .link-icon{width:36px;height:36px;font-size:15px;}
+  .moverlay{padding:0 !important;align-items:flex-end !important;}
+  .modal{
+    border-radius:20px 20px 0 0 !important;
+    max-width:100% !important;
+    max-height:88vh !important;
+  }
+  .mbody{padding:14px 16px 28px !important;}
+  .mhead{padding:14px 18px !important;}
 
   /* Form actions */
-  .form-actions{flex-wrap:wrap;}
-  .form-actions .btn{flex:1 1 calc(50% - 4px);justify-content:center;}
+  .form-actions{flex-wrap:wrap !important;}
+  .form-actions .btn{flex:1 1 calc(50% - 4px) !important;justify-content:center !important;}
 
-  /* Perm grid: 1 col */
-  .perm-grid{grid-template-columns:1fr;}
-
-  /* Inactivity toast */
-  #inactivity-toast{bottom:10px;right:10px;left:10px;font-size:11px;}
+  /* Sidebar nav */
+  .sidebar-brand{padding:14px 13px !important;}
+  .sidebar-brand h1{font-size:14px !important;}
+  .nav-item{font-size:12px !important;padding:8px 10px !important;}
+  .nav-group{font-size:8px !important;padding:10px 8px 3px !important;}
 }
 
 /* ================================================================
-   MOBILE SMALL — max 480px
+   MOBILE SMALL  ≤ 480px
 ================================================================ */
 @media(max-width:480px){
 
-  .sidebar{width:230px;transform:translateX(-230px);}
+  .sidebar{width:240px !important;transform:translateX(-240px) !important;}
+  .sidebar.open{transform:translateX(0) !important;}
 
-  /* Content more compact */
-  .content{padding:10px 10px 70px;}
-  .topbar{padding:0 10px;height:48px;}
-  .topbar-title{font-size:13px;}
+  .content{padding:10px 10px 70px !important;}
+  .topbar{padding:0 10px !important;height:48px !important;}
+  .topbar-title{font-size:13px !important;}
 
-  /* Stats: tighter */
-  .stats-grid{gap:7px;}
-  .stat-num{font-size:20px;}
-
-  /* Card */
-  .card{padding:10px;}
-
-  /* Section head */
-  .sec-head h2{font-size:15px;}
+  .stats-grid{gap:7px !important;}
+  .stat-num{font-size:20px !important;}
+  .card{padding:10px !important;}
+  .sec-head h2{font-size:15px !important;}
 
   /* Filter bar: column */
-  .fbar{flex-direction:column;gap:6px;}
-  .fbar input,.fbar select{width:100%;flex:none;}
-  .search-wrap{width:100%;min-width:unset;}
+  .fbar{flex-direction:column !important;gap:6px !important;}
+  .fbar input,.fbar select{width:100% !important;flex:none !important;}
+  .search-wrap{width:100% !important;min-width:unset !important;}
 
-  /* Tables: tighter */
-  .tbl-wrap table{min-width:380px;}
-  tbody td{font-size:11px;padding:7px 8px;}
-  thead th{font-size:9px;padding:6px 8px;}
+  /* Hide print/excel on small */
+  .btn-print,.btn-excel{display:none !important;}
 
-  /* Hide print/excel on very small screens */
-  .btn-print,.btn-excel{display:none!important;}
-
-  /* Topbar right: scroll */
-  .topbar-right{max-width:calc(100vw - 140px);}
+  .topbar-right{max-width:calc(100vw - 130px) !important;}
 
   /* Sidebar foot compact */
-  .sidebar-foot{padding:10px;}
-  .user-name{font-size:11px;}
-  .user-sub{font-size:9px;}
-
-  /* Agroup wrap */
-  .agroup{flex-wrap:wrap;gap:3px;}
+  .sidebar-foot{padding:10px !important;}
+  .user-name{font-size:11px !important;}
+  .user-sub{font-size:9px !important;}
 
   /* Link card stack */
-  .link-card{flex-wrap:wrap;gap:8px;}
-  .link-actions{width:100%;justify-content:flex-end;}
+  .link-card{flex-wrap:wrap !important;gap:8px !important;}
+  .link-actions{width:100% !important;justify-content:flex-end !important;}
+  .link-grid{grid-template-columns:1fr !important;}
 
-  /* Link grid: 1 col */
-  .link-grid{grid-template-columns:1fr;}
+  /* Inactivity toast */
+  #inactivity-toast{
+    bottom:10px !important;right:10px !important;left:10px !important;
+    font-size:11px !important;
+  }
+
+  /* Tables: tighter */
+  .tbl-wrap table{min-width:360px !important;}
+  tbody td{font-size:11px !important;padding:7px 8px !important;}
+  thead th{font-size:9px !important;padding:6px 8px !important;}
 }
 
-/* ── iOS safe area (notch / home bar) ── */
-@supports(padding:env(safe-area-inset-bottom)){
-  @media(max-width:768px){
-    .sidebar{padding-bottom:env(safe-area-inset-bottom);}
-    .content{padding-bottom:calc(60px + env(safe-area-inset-bottom));}
+/* ================================================================
+   iOS FIXES
+================================================================ */
+/* Input zoom fix — only mobile */
+@media(max-width:768px){
+  input[type="text"],
+  input[type="password"],
+  input[type="email"],
+  input[type="date"],
+  input[type="time"],
+  select,textarea{
+    font-size:16px !important;
   }
 }
 
-/* ── iOS input zoom fix (16px min) ── */
-@media(max-width:768px){
-  input[type="text"],input[type="password"],input[type="email"],
-  input[type="date"],input[type="time"],select,textarea{
-    font-size:16px!important;
+/* Safe area (iPhone notch / home bar) */
+@supports(padding:env(safe-area-inset-bottom)){
+  @media(max-width:768px){
+    .sidebar{
+      padding-bottom:env(safe-area-inset-bottom) !important;
+      height:calc(100vh + env(safe-area-inset-bottom)) !important;
+    }
+    .content{
+      padding-bottom:calc(70px + env(safe-area-inset-bottom)) !important;
+    }
   }
 }
 
@@ -1252,11 +1283,11 @@ document.querySelectorAll('.moverlay').forEach(ov=>{ov.addEventListener('click',
 </script>
 
 <script>
-/* ── RESPONSIVE JS PATCH v2 ── */
+/* ── RESPONSIVE JS PATCH v3 ── */
 (function(){
   'use strict';
 
-  // 1. Backdrop element banao
+  /* --- Backdrop --- */
   var bd = document.createElement('div');
   bd.className = 'sidebar-backdrop';
   bd.id = 'sidebar-backdrop';
@@ -1268,24 +1299,27 @@ document.querySelectorAll('.moverlay').forEach(ov=>{ov.addEventListener('click',
     var sb = document.getElementById('sidebar');
     if(!sb) return;
     sb.classList.add('open');
-    bd.classList.add('show');
+    bd.style.display = 'block';
+    /* Scroll lock */
     document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
   }
 
   function closeSidebar(){
     var sb = document.getElementById('sidebar');
     if(!sb) return;
     sb.classList.remove('open');
-    bd.classList.remove('show');
+    bd.style.display = 'none';
     document.body.style.overflow = '';
+    document.documentElement.style.overflow = '';
   }
 
-  // 2. Backdrop click → close
+  /* Backdrop click → close */
   bd.addEventListener('click', closeSidebar);
 
-  // 3. Hamburger click — event delegation (works even if rebuilt by buildSidebar)
+  /* Hamburger click (event delegation — works after buildSidebar rebuilds DOM) */
   document.addEventListener('click', function(e){
-    var ham = e.target.closest('.hamburger');
+    var ham = e.target.closest ? e.target.closest('.hamburger') : null;
     if(!ham) return;
     e.stopPropagation();
     var sb = document.getElementById('sidebar');
@@ -1293,14 +1327,14 @@ document.querySelectorAll('.moverlay').forEach(ov=>{ov.addEventListener('click',
     else openSidebar();
   }, true);
 
-  // 4. Nav item click → close sidebar on mobile
+  /* Nav item click → close sidebar on mobile */
   document.addEventListener('click', function(e){
     if(!isMobile()) return;
-    var ni = e.target.closest('.nav-item');
-    if(ni) setTimeout(closeSidebar, 120);
+    var ni = e.target.closest ? e.target.closest('.nav-item') : null;
+    if(ni) setTimeout(closeSidebar, 100);
   });
 
-  // 5. Escape key → close sidebar + modals
+  /* Escape key */
   document.addEventListener('keydown', function(e){
     if(e.key !== 'Escape') return;
     closeSidebar();
@@ -1309,16 +1343,21 @@ document.querySelectorAll('.moverlay').forEach(ov=>{ov.addEventListener('click',
     });
   });
 
-  // 6. Resize → auto close sidebar
-  var rt;
+  /* Resize → reset on desktop */
+  var resizeTimer;
   window.addEventListener('resize', function(){
-    clearTimeout(rt);
-    rt = setTimeout(function(){
-      if(!isMobile()) closeSidebar();
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function(){
+      if(!isMobile()){
+        closeSidebar();
+        /* Desktop pe overflow reset */
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+      }
     }, 150);
   });
 
-  // 7. Mobile swipe down to close modal
+  /* Mobile swipe down to close bottom-sheet modal */
   var touchStartY = 0;
   document.addEventListener('touchstart', function(e){
     touchStartY = e.touches[0].clientY;
@@ -1326,42 +1365,50 @@ document.querySelectorAll('.moverlay').forEach(ov=>{ov.addEventListener('click',
   document.addEventListener('touchend', function(e){
     if(window.innerWidth > 600) return;
     var dy = e.changedTouches[0].clientY - touchStartY;
-    if(dy > 90){
+    if(dy > 80){
       var om = document.querySelector('.moverlay.open');
       if(om) om.classList.remove('open');
     }
   }, {passive:true});
 
-  // 8. renderPage wrapper → close sidebar + table shadows
+  /* renderPage wrapper → close sidebar + add table shadows */
   var origRP = window.renderPage;
   if(typeof origRP === 'function'){
     window.renderPage = function(pg){
       origRP(pg);
+      /* Close sidebar on page change (mobile) */
       if(isMobile()) closeSidebar();
+      /* Table horizontal scroll shadow */
       setTimeout(function(){
         document.querySelectorAll('.tbl-wrap').forEach(function(w){
-          if(w._shadow) return;
-          w._shadow = true;
-          w.addEventListener('scroll', function(){
+          if(w._rInit) return;
+          w._rInit = true;
+          function updateShadow(){
             var atEnd = w.scrollLeft + w.clientWidth >= w.scrollWidth - 4;
-            w.style.boxShadow = atEnd ? '' : 'inset -10px 0 12px -8px rgba(0,0,0,0.10)';
-          }, {passive:true});
+            w.style.boxShadow = (!atEnd && w.scrollWidth > w.clientWidth)
+              ? 'inset -10px 0 12px -8px rgba(0,0,0,0.10)'
+              : '';
+          }
+          w.addEventListener('scroll', updateShadow, {passive:true});
+          updateShadow();
         });
-      }, 100);
+      }, 120);
     };
   }
 
-  // 9. Topbar shadow on scroll
+  /* Topbar shadow on scroll */
   window.addEventListener('scroll', function(){
     var tb = document.querySelector('.topbar');
-    if(tb) tb.style.boxShadow = window.scrollY > 4
+    if(!tb) return;
+    tb.style.boxShadow = window.scrollY > 4
       ? '0 2px 14px rgba(0,0,0,0.12)'
       : '0 1px 6px rgba(0,0,0,0.05)';
   }, {passive:true});
 
-  console.log('✅ Responsive JS v2 loaded');
+  console.log('✅ Responsive JS v3 loaded');
 })();
 </script>
+
 
 
 <script src="supabase_db.js"></script>

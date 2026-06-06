@@ -334,221 +334,278 @@ tbody tr:hover{background:#f8fbff;}
 .del-card.dc-delayed{border-left-color:var(--purple);}
 .del-card.dc-extended{border-left-color:var(--orange);}
 /* ================================================================
-   RESPONSIVE PATCH — All Devices
-   Mobile / Tablet / macOS / Large Desktop
+   RESPONSIVE PATCH v2 — Mobile & Tablet Only
+   Desktop (769px+) mein ZERO changes
 ================================================================ */
 
-/* ── GLOBAL TOUCH ── */
-*{-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
-html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;}
-
-/* iOS zoom fix — inputs 16px se kam nahi honge */
-input,select,textarea,button{font-size:16px!important;}
-/* Lekin desktop pe original sizes override karo */
-@media(min-width:769px){
-  input,select,textarea{font-size:13px!important;}
-  button.btn{font-size:12px!important;}
-  button.btn-sm{font-size:11px!important;}
-  button.login-btn{font-size:14px!important;}
-  .form-field input,.form-field select{font-size:13.5px!important;}
-  .fg input,.fg select,.fg textarea{font-size:13px!important;}
-  .fbar input,.fbar select{font-size:12.5px!important;}
+/* ── Sidebar backdrop overlay ── */
+.sidebar-backdrop{
+  display:none;
+  position:fixed;inset:0;
+  background:rgba(10,22,40,0.6);
+  z-index:150;
+  -webkit-backdrop-filter:blur(2px);
+  backdrop-filter:blur(2px);
 }
-
-/* ── SIDEBAR BACKDROP ── */
-.sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(10,22,40,0.55);z-index:99;backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);}
 .sidebar-backdrop.show{display:block;}
 
-/* ── MODAL MOBILE BOTTOM SHEET ── */
-@media(max-width:600px){
-  .moverlay{padding:0;align-items:flex-end;}
-  .modal{border-radius:20px 20px 0 0;max-width:100%!important;}
-  .mbody{padding:14px 16px 28px;}
-  .mhead{padding:14px 18px;}
-}
-@media(min-width:601px){
+/* ── Hamburger: desktop pe hide ── */
+.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:6px;background:none;border:none;flex-shrink:0;}
+.hamburger span{width:20px;height:2px;background:var(--navy);border-radius:2px;display:block;}
+
+/* ================================================================
+   TABLET — max 768px
+   Sidebar hidden, hamburger visible, content full width
+================================================================ */
+@media(max-width:768px){
+
+  /* Sidebar: off-canvas */
+  :root{--sidebar:0px;}
+  .sidebar{
+    width:260px;
+    transform:translateX(-260px);
+    transition:transform 0.26s ease;
+    z-index:200;
+    position:fixed;
+    height:100vh;
+    top:0;left:0;
+  }
+  .sidebar.open{transform:translateX(0);}
+
+  /* Main content: full width */
+  .main{margin-left:0!important;}
+
+  /* Topbar */
+  .hamburger{display:flex!important;}
+  .topbar{padding:0 14px;height:52px;}
+  .topbar-title{font-size:16px;}
+  .topbar-right{gap:5px;}
+
+  /* Logout button fix */
+  .logout-btn{
+    display:block!important;
+    width:100%;
+    margin-top:8px;
+    padding:9px 10px;
+    border-radius:8px;
+    border:1px solid rgba(255,255,255,0.15);
+    background:rgba(255,255,255,0.06);
+    color:rgba(255,255,255,0.7);
+    font-family:'Nunito',sans-serif;
+    font-size:12px;
+    font-weight:700;
+    cursor:pointer;
+    text-align:center;
+  }
+  .logout-btn:hover{background:rgba(255,255,255,0.12);color:white;}
+
+  /* Sidebar foot always visible */
+  .sidebar-foot{display:flex!important;flex-direction:column;padding:12px;}
+
+  /* Stats grid: 2 columns */
+  .stats-grid{grid-template-columns:repeat(2,1fr);gap:10px;}
+
+  /* Content padding */
+  .content{padding:16px;}
+
+  /* Cards */
+  .card{padding:14px;margin-bottom:14px;}
+
+  /* Form grid: single column */
+  .fgrid{grid-template-columns:1fr!important;}
+  .full{grid-column:1!important;}
+
+  /* Tables: horizontal scroll */
+  .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .tbl-wrap table{min-width:500px;}
+  tbody td{font-size:12px;padding:9px 11px;}
+  thead th{font-size:10px;padding:8px 11px;}
+
+  /* Filter bar: wrap */
+  .fbar{flex-wrap:wrap;gap:8px;}
+  .fbar input,.fbar select{min-width:120px;flex:1 1 120px;}
+  .search-wrap{min-width:160px;flex:1 1 160px;}
+
+  /* Track grid: 2 col */
+  .track-grid{grid-template-columns:repeat(2,1fr);}
+
+  /* MIS summary: 3 col */
+  #mis-summary{grid-template-columns:repeat(3,1fr)!important;}
+
+  /* Perm grid: single */
+  .perm-grid{grid-template-columns:1fr;}
+
+  /* Section head */
+  .sec-head{flex-direction:column;align-items:flex-start;gap:8px;}
+  .sec-head h2{font-size:17px;}
+
+  /* Modal */
   .moverlay{padding:16px;align-items:center;}
   .modal{border-radius:14px;}
 }
 
-/* ── TOPBAR ── */
-.topbar{flex-wrap:wrap;gap:6px;min-height:56px;height:auto;padding:8px 20px;}
-.topbar-right{gap:4px;flex-wrap:wrap;}
-
-/* ── TABLES ── */
-.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
-.tbl-wrap table{min-width:520px;}
-
-/* ── FILTER BAR ── */
-.fbar{flex-wrap:wrap;gap:7px;}
-.fbar input,.fbar select{min-width:110px;flex:1;}
-.search-wrap{min-width:150px;flex:1 1 150px;}
-
-/* ── LINK GRID ── */
-.link-grid{grid-template-columns:repeat(auto-fill,minmax(260px,1fr));}
-
-/* ── SCROLLBAR macOS style ── */
-::-webkit-scrollbar{width:5px;height:5px;}
-::-webkit-scrollbar-track{background:transparent;}
-::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.18);border-radius:10px;}
-::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,0.32);}
-.sidebar-nav::-webkit-scrollbar{width:3px;}
-.sidebar-nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.12);}
-
-/* ── FOCUS VISIBLE ── */
-:focus-visible{outline:2px solid var(--teal2);outline-offset:2px;border-radius:4px;}
-
-/* ── REDUCED MOTION ── */
-@media(prefers-reduced-motion:reduce){
-  *,*::before,*::after{animation-duration:0.01ms!important;animation-iteration-count:1!important;transition-duration:0.01ms!important;}
-}
-
 /* ================================================================
-   TABLET LANDSCAPE — 768px to 1024px
-================================================================ */
-@media(max-width:1024px){
-  :root{--sidebar:200px;}
-  .stats-grid{grid-template-columns:repeat(4,1fr);gap:8px;}
-  .stat-num{font-size:28px;}
-  .topbar-title{font-size:16px;}
-  .content{padding:18px;}
-}
-
-/* ================================================================
-   TABLET PORTRAIT — 600px to 768px
-================================================================ */
-@media(max-width:768px){
-  :root{--sidebar:0px;}
-  .sidebar{width:240px;transform:translateX(-240px);transition:transform 0.28s cubic-bezier(0.4,0,0.2,1);z-index:200;box-shadow:none;}
-  .sidebar.open{transform:translateX(0);box-shadow:4px 0 24px rgba(0,0,0,0.22);}
-  .main{margin-left:0!important;}
-  .hamburger{display:flex!important;}
-  .stats-grid{grid-template-columns:repeat(2,1fr);gap:8px;}
-  .topbar{padding:8px 14px;}
-  .topbar-title{font-size:15px;}
-  .content{padding:14px;}
-  .card{padding:14px;}
-  .fgrid{grid-template-columns:1fr;}
-  .full{grid-column:1;}
-  .btn{padding:6px 11px;font-size:11px!important;}
-  .btn-sm{padding:5px 9px;font-size:10px!important;}
-  .link-grid{grid-template-columns:1fr;}
-  #mis-summary{grid-template-columns:repeat(3,1fr);gap:8px;}
-  .perm-grid{grid-template-columns:1fr;}
-  .sec-head{flex-direction:column;align-items:flex-start;gap:8px;}
-  .sec-head h2{font-size:17px;}
-  tbody td{font-size:12px;padding:9px 10px;}
-  thead th{font-size:10px;padding:8px 10px;}
-  .track-grid{grid-template-columns:repeat(2,1fr);}
-}
-
-/* ================================================================
-   MOBILE LARGE — 480px to 600px
+   MOBILE — max 600px
 ================================================================ */
 @media(max-width:600px){
-  .sidebar{width:220px;transform:translateX(-220px);}
-  .stats-grid{grid-template-columns:repeat(2,1fr);gap:7px;}
-  .stat{padding:12px;}
-  .stat-num{font-size:22px;}
-  .stat-lbl{font-size:10px;}
-  .stat-ico{font-size:20px;}
-  .content{padding:12px 12px 80px;}
-  .topbar{padding:8px 12px;min-height:52px;}
+
+  .sidebar{width:240px;transform:translateX(-240px);}
+
+  /* Topbar */
+  .topbar{padding:0 12px;height:50px;}
   .topbar-title{font-size:14px;}
+  .topbar-right{
+    gap:4px;
+    max-width:calc(100vw - 160px);
+    overflow-x:auto;
+    flex-wrap:nowrap;
+  }
+
+  /* Content */
+  .content{padding:12px 12px 70px;}
+
+  /* Stats */
+  .stats-grid{grid-template-columns:repeat(2,1fr);gap:8px;}
+  .stat{padding:12px 10px;}
+  .stat-num{font-size:24px;}
+  .stat-lbl{font-size:10px;}
+  .stat-ico{font-size:20px;right:10px;}
+
+  /* Cards */
   .card{padding:12px;margin-bottom:12px;}
   .card-title{font-size:13px;}
-  .btn{padding:7px 10px;font-size:11px!important;}
-  .fbar{gap:6px;}
-  tbody td{font-size:11.5px;padding:8px 9px;}
-  thead th{font-size:9.5px;padding:7px 9px;}
-  .login-card{padding:30px 22px;width:95vw;}
+
+  /* Login */
+  .login-card{padding:28px 20px;width:95vw;max-width:95vw;}
   .login-logo .emoji{font-size:42px;}
-  .login-logo h1{font-size:19px;}
-  .login-logo p{font-size:9px;}
+  .login-logo h1{font-size:20px;}
   .login-tab{font-size:11px;padding:9px 6px;}
-  .login-btn{font-size:13px!important;padding:13px;}
-  .alrt{font-size:12px;padding:9px 12px;}
-  .badge{font-size:10px;padding:2px 7px;}
+
+  /* Alerts */
+  .alrt{font-size:12px;padding:9px 12px;gap:7px;}
+
+  /* Badges */
+  .badge{font-size:10px;padding:2px 8px;}
+
+  /* Buttons */
+  .btn{padding:7px 10px;}
+  .btn-sm{padding:5px 9px;}
+
+  /* Task / del / issue cards */
   .task-card{padding:12px 13px;}
   .tc-title{font-size:13px;}
-  #mis-summary{grid-template-columns:repeat(2,1fr);gap:7px;}
   .del-card{padding:12px 13px;}
   .issue-report-card{padding:12px;}
-  .link-card{padding:12px 13px;}
-  .link-icon{width:36px;height:36px;font-size:16px;}
+
+  /* Filter bar */
+  .fbar{gap:6px;}
+  .fbar input,.fbar select{font-size:12px;}
+
+  /* Tables */
+  .tbl-wrap table{min-width:440px;}
+  tbody td{font-size:11.5px;padding:8px 9px;}
+  thead th{font-size:9.5px;padding:7px 9px;}
+
+  /* Sidebar internals */
+  .sidebar-brand{padding:14px 13px;}
   .sidebar-brand h1{font-size:14px;}
-  .sidebar-brand{padding:14px 12px;}
-  .nav-item{font-size:12px;padding:8px 9px;}
+  .nav-item{font-size:12px;padding:8px 10px;}
+  .nav-group{font-size:8px;padding:10px 8px 3px;}
+
+  /* Track grid: 1 col */
   .track-grid{grid-template-columns:1fr;}
-  .topbar-right{max-width:calc(100vw - 150px);overflow-x:auto;flex-wrap:nowrap;}
+
+  /* MIS: 2 col */
+  #mis-summary{grid-template-columns:repeat(2,1fr)!important;}
+
+  /* Modal: bottom sheet */
+  .moverlay{padding:0;align-items:flex-end;}
+  .modal{border-radius:20px 20px 0 0;max-width:100%!important;max-height:88vh;}
+  .mbody{padding:14px 16px 28px;}
+  .mhead{padding:14px 18px;}
+
+  /* Link card */
+  .link-card{padding:12px;}
+  .link-icon{width:36px;height:36px;font-size:15px;}
+
+  /* Form actions */
+  .form-actions{flex-wrap:wrap;}
+  .form-actions .btn{flex:1 1 calc(50% - 4px);justify-content:center;}
+
+  /* Perm grid: 1 col */
+  .perm-grid{grid-template-columns:1fr;}
+
+  /* Inactivity toast */
+  #inactivity-toast{bottom:10px;right:10px;left:10px;font-size:11px;}
 }
 
 /* ================================================================
-   MOBILE SMALL — < 480px
+   MOBILE SMALL — max 480px
 ================================================================ */
 @media(max-width:480px){
-  .stats-grid{grid-template-columns:repeat(2,1fr);gap:6px;}
-  .stat-num{font-size:20px;}
-  .content{padding:10px 10px 80px;}
-  .topbar{padding:7px 10px;}
+
+  .sidebar{width:230px;transform:translateX(-230px);}
+
+  /* Content more compact */
+  .content{padding:10px 10px 70px;}
+  .topbar{padding:0 10px;height:48px;}
   .topbar-title{font-size:13px;}
-  .login-card{padding:24px 16px;width:98vw;}
-  .login-logo .emoji{font-size:36px;}
-  .login-logo h1{font-size:17px;}
+
+  /* Stats: tighter */
+  .stats-grid{gap:7px;}
+  .stat-num{font-size:20px;}
+
+  /* Card */
   .card{padding:10px;}
-  .btn{padding:6px 9px;font-size:10.5px!important;}
-  .btn-sm{padding:5px 8px;font-size:10px!important;}
+
+  /* Section head */
+  .sec-head h2{font-size:15px;}
+
+  /* Filter bar: column */
+  .fbar{flex-direction:column;gap:6px;}
+  .fbar input,.fbar select{width:100%;flex:none;}
+  .search-wrap{width:100%;min-width:unset;}
+
+  /* Tables: tighter */
+  .tbl-wrap table{min-width:380px;}
+  tbody td{font-size:11px;padding:7px 8px;}
+  thead th{font-size:9px;padding:6px 8px;}
+
+  /* Hide print/excel on very small screens */
   .btn-print,.btn-excel{display:none!important;}
-  #mis-summary{grid-template-columns:repeat(2,1fr);}
-  .tbl-wrap table{min-width:420px;}
+
+  /* Topbar right: scroll */
+  .topbar-right{max-width:calc(100vw - 140px);}
+
+  /* Sidebar foot compact */
   .sidebar-foot{padding:10px;}
   .user-name{font-size:11px;}
   .user-sub{font-size:9px;}
-  .logout-btn{font-size:10px;padding:6px;}
-  .sec-head{flex-direction:column;align-items:flex-start;}
-  .sec-head h2{font-size:15px;}
-  .fbar{flex-direction:column;}
-  .fbar input,.fbar select{width:100%;flex:none;min-width:unset;}
-  .search-wrap{width:100%;min-width:unset;}
-  .form-actions{flex-wrap:wrap;gap:7px;}
-  .form-actions .btn{flex:1 1 calc(50% - 4px);justify-content:center;}
+
+  /* Agroup wrap */
+  .agroup{flex-wrap:wrap;gap:3px;}
+
+  /* Link card stack */
   .link-card{flex-wrap:wrap;gap:8px;}
   .link-actions{width:100%;justify-content:flex-end;}
-  .perm-grid{grid-template-columns:1fr;}
-  .agroup{flex-wrap:wrap;}
-  #inactivity-toast{bottom:10px;right:10px;left:10px;font-size:11px;padding:9px 13px;}
+
+  /* Link grid: 1 col */
+  .link-grid{grid-template-columns:1fr;}
 }
 
-/* ================================================================
-   macOS / LARGE DESKTOP — > 1280px
-================================================================ */
-@media(min-width:1280px){
-  :root{--sidebar:240px;}
-  .content{padding:24px 28px;}
-  .stats-grid{gap:14px;}
-  .stat-num{font-size:38px;}
-  .card{padding:20px 22px;}
-}
-@media(min-width:1600px){
-  :root{--sidebar:250px;}
-  .content{padding:28px 36px;}
-}
-
-/* ── HAMBURGER: desktop pe hide karo ── */
-@media(min-width:769px){
-  .hamburger{display:none!important;}
-  .sidebar-backdrop{display:none!important;}
-}
-
-/* ── Safe area iPhone notch ── */
+/* ── iOS safe area (notch / home bar) ── */
 @supports(padding:env(safe-area-inset-bottom)){
-  .content{padding-bottom:calc(80px + env(safe-area-inset-bottom));}
-  .topbar{padding-top:max(8px,env(safe-area-inset-top));}
-  .sidebar{padding-bottom:env(safe-area-inset-bottom);}
+  @media(max-width:768px){
+    .sidebar{padding-bottom:env(safe-area-inset-bottom);}
+    .content{padding-bottom:calc(60px + env(safe-area-inset-bottom));}
+  }
 }
-@media(min-width:769px){
-  @supports(padding:env(safe-area-inset-bottom)){
-    .content{padding-bottom:22px;}
+
+/* ── iOS input zoom fix (16px min) ── */
+@media(max-width:768px){
+  input[type="text"],input[type="password"],input[type="email"],
+  input[type="date"],input[type="time"],select,textarea{
+    font-size:16px!important;
   }
 }
 
@@ -1195,125 +1252,117 @@ document.querySelectorAll('.moverlay').forEach(ov=>{ov.addEventListener('click',
 </script>
 
 <script>
-/* ── RESPONSIVE JS PATCH ── */
+/* ── RESPONSIVE JS PATCH v2 ── */
 (function(){
   'use strict';
 
-  /* 1. Sidebar Backdrop banao */
-  var bd=document.createElement('div');
-  bd.className='sidebar-backdrop';
-  bd.id='sidebar-backdrop';
+  // 1. Backdrop element banao
+  var bd = document.createElement('div');
+  bd.className = 'sidebar-backdrop';
+  bd.id = 'sidebar-backdrop';
   document.body.appendChild(bd);
 
-  /* 2. Sidebar open/close functions */
-  function openSB(){
-    var sb=document.getElementById('sidebar');
-    if(!sb)return;
+  function isMobile(){ return window.innerWidth <= 768; }
+
+  function openSidebar(){
+    var sb = document.getElementById('sidebar');
+    if(!sb) return;
     sb.classList.add('open');
     bd.classList.add('show');
-    document.body.style.overflow='hidden';
+    document.body.style.overflow = 'hidden';
   }
-  function closeSB(){
-    var sb=document.getElementById('sidebar');
-    if(!sb)return;
+
+  function closeSidebar(){
+    var sb = document.getElementById('sidebar');
+    if(!sb) return;
     sb.classList.remove('open');
     bd.classList.remove('show');
-    document.body.style.overflow='';
+    document.body.style.overflow = '';
   }
 
-  /* 3. Backdrop click se sidebar band */
-  bd.addEventListener('click',closeSB);
+  // 2. Backdrop click → close
+  bd.addEventListener('click', closeSidebar);
 
-  /* 4. Hamburger click — purana onclick replace karo */
-  document.addEventListener('click',function(e){
-    var ham=e.target.closest('.hamburger');
-    if(!ham)return;
+  // 3. Hamburger click — event delegation (works even if rebuilt by buildSidebar)
+  document.addEventListener('click', function(e){
+    var ham = e.target.closest('.hamburger');
+    if(!ham) return;
     e.stopPropagation();
-    var sb=document.getElementById('sidebar');
-    if(sb&&sb.classList.contains('open'))closeSB();
-    else openSB();
-  },true);
+    var sb = document.getElementById('sidebar');
+    if(sb && sb.classList.contains('open')) closeSidebar();
+    else openSidebar();
+  }, true);
 
-  /* 5. Nav item click pe mobile mein sidebar band karo */
-  document.addEventListener('click',function(e){
-    var ni=e.target.closest('.nav-item');
-    if(ni&&window.innerWidth<=768)setTimeout(closeSB,100);
+  // 4. Nav item click → close sidebar on mobile
+  document.addEventListener('click', function(e){
+    if(!isMobile()) return;
+    var ni = e.target.closest('.nav-item');
+    if(ni) setTimeout(closeSidebar, 120);
   });
 
-  /* 6. Escape key se band karo */
-  document.addEventListener('keydown',function(e){
-    if(e.key==='Escape'){
-      closeSB();
-      /* Open modals bhi band karo */
-      document.querySelectorAll('.moverlay.open').forEach(function(m){
-        m.classList.remove('open');
-      });
-    }
-  });
-
-  /* 7. Resize par sidebar reset */
-  var rt;
-  window.addEventListener('resize',function(){
-    clearTimeout(rt);
-    rt=setTimeout(function(){
-      if(window.innerWidth>768)closeSB();
-    },150);
-  });
-
-  /* 8. Mobile pe modal swipe down to close */
-  var ty=0;
-  document.addEventListener('touchstart',function(e){ty=e.touches[0].clientY;},{passive:true});
-  document.addEventListener('touchend',function(e){
-    if(window.innerWidth>600)return;
-    var dy=e.changedTouches[0].clientY-ty;
-    if(dy>80){
-      var om=document.querySelector('.moverlay.open');
-      if(om)om.classList.remove('open');
-    }
-  },{passive:true});
-
-  /* 9. Touch tap feedback */
-  document.addEventListener('touchstart',function(e){
-    var b=e.target.closest('.btn,.nav-item,.ibtn,.link-open-btn,.login-btn');
-    if(b)b.style.opacity='0.75';
-  },{passive:true});
-  document.addEventListener('touchend',function(){
-    document.querySelectorAll('[style*="opacity: 0.75"],[style*="opacity:0.75"]').forEach(function(el){
-      el.style.opacity='';
+  // 5. Escape key → close sidebar + modals
+  document.addEventListener('keydown', function(e){
+    if(e.key !== 'Escape') return;
+    closeSidebar();
+    document.querySelectorAll('.moverlay.open').forEach(function(m){
+      m.classList.remove('open');
     });
-  },{passive:true});
+  });
 
-  /* 10. renderPage ke baad tbl-wrap scroll shadow */
-  var origRP=window.renderPage;
-  if(typeof origRP==='function'){
-    window.renderPage=function(pg){
+  // 6. Resize → auto close sidebar
+  var rt;
+  window.addEventListener('resize', function(){
+    clearTimeout(rt);
+    rt = setTimeout(function(){
+      if(!isMobile()) closeSidebar();
+    }, 150);
+  });
+
+  // 7. Mobile swipe down to close modal
+  var touchStartY = 0;
+  document.addEventListener('touchstart', function(e){
+    touchStartY = e.touches[0].clientY;
+  }, {passive:true});
+  document.addEventListener('touchend', function(e){
+    if(window.innerWidth > 600) return;
+    var dy = e.changedTouches[0].clientY - touchStartY;
+    if(dy > 90){
+      var om = document.querySelector('.moverlay.open');
+      if(om) om.classList.remove('open');
+    }
+  }, {passive:true});
+
+  // 8. renderPage wrapper → close sidebar + table shadows
+  var origRP = window.renderPage;
+  if(typeof origRP === 'function'){
+    window.renderPage = function(pg){
       origRP(pg);
+      if(isMobile()) closeSidebar();
       setTimeout(function(){
         document.querySelectorAll('.tbl-wrap').forEach(function(w){
-          if(w._rp)return;
-          w._rp=true;
-          w.addEventListener('scroll',function(){
-            var atEnd=w.scrollLeft+w.clientWidth>=w.scrollWidth-4;
-            w.style.boxShadow=atEnd?'':'inset -8px 0 10px -8px rgba(0,0,0,0.09)';
-          },{passive:true});
+          if(w._shadow) return;
+          w._shadow = true;
+          w.addEventListener('scroll', function(){
+            var atEnd = w.scrollLeft + w.clientWidth >= w.scrollWidth - 4;
+            w.style.boxShadow = atEnd ? '' : 'inset -10px 0 12px -8px rgba(0,0,0,0.10)';
+          }, {passive:true});
         });
-        /* Mobile pe page change hone par sidebar band karo */
-        if(window.innerWidth<=768)closeSB();
-      },80);
+      }, 100);
     };
   }
 
-  /* 11. Topbar scroll shadow */
-  var tb=document.querySelector('.topbar');
-  if(tb){
-    window.addEventListener('scroll',function(){
-      tb.style.boxShadow=window.scrollY>4?'0 2px 12px rgba(0,0,0,0.10)':'0 1px 6px rgba(0,0,0,0.05)';
-    },{passive:true});
-  }
+  // 9. Topbar shadow on scroll
+  window.addEventListener('scroll', function(){
+    var tb = document.querySelector('.topbar');
+    if(tb) tb.style.boxShadow = window.scrollY > 4
+      ? '0 2px 14px rgba(0,0,0,0.12)'
+      : '0 1px 6px rgba(0,0,0,0.05)';
+  }, {passive:true});
 
-  console.log('✅ Responsive patch loaded');
+  console.log('✅ Responsive JS v2 loaded');
 })();
 </script>
+
 
 <script src="supabase_db.js"></script>
 </body>

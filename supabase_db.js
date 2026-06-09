@@ -149,11 +149,15 @@ window.ld = function(key, defaultVal) {
 };
 
 // ================================================================
-// FIX 1: sv() — index.html wali sv line ko override karta hai
-// Supabase mein save hoga + localStorage mein bhi
+// MAIN FIX: sv() function — Supabase + localStorage dono mein save
+// window._supabaseSv set karta hai taaki index.html ka var sv
+// automatically is function ko call kare
 // ================================================================
-window.sv = async function(key, val) {
+async function _svImpl(key, val) {
+  // localStorage mein turant save
   try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {}
+
+  // Supabase mein save
   if (!_ready || !_sb) return;
 
   if (isLinkKey(key)) {
@@ -184,7 +188,11 @@ window.sv = async function(key, val) {
       else console.log('Saved ['+key+'] —', val.length, 'records');
     }
   } catch(e) { console.error('sv() exception:', e.message||e); }
-};
+}
+
+// window.sv AND window._supabaseSv dono set karo
+window.sv = _svImpl;
+window._supabaseSv = _svImpl;
 
 async function loadFromSupabase() {
   const keys = Object.keys(TABLES);
@@ -221,7 +229,6 @@ window.loadUserLinks = async function() {
 };
 
 function setupRealtime() {
-  // admins bhi realtime mein add kiya — dusre system pe turant update ho
   const realtimeTables = ['tasks', 'issues', 'departments', 'employees', 'delegations', 'admins'];
   realtimeTables.forEach(tableName => {
     _sb.channel('rt-' + tableName)
@@ -241,25 +248,15 @@ function setupRealtime() {
   console.log('Realtime active!');
 }
 
-// ================================================================
-// FIX 2: dbDelete — startDB ke BAHAR define kiya (closing brace fix)
-// ================================================================
+// dbDelete — startDB ke BAHAR (bug fix)
 window.dbDelete = async function(type, id) {
-  if (!_ready || !_sb) {
-    console.warn('DB not ready — delete skipped for', type, id);
-    return;
-  }
+  if (!_ready || !_sb) return;
   const tableMap = {
-    'task':      'tasks',
-    'issue':     'issues',
-    'employee':  'employees',
-    'dept':      'departments',
-    'admin':     'admins',
-    'handover':  'handovers',
-    'delegation':'delegations',
+    'task': 'tasks', 'issue': 'issues', 'employee': 'employees',
+    'dept': 'departments', 'admin': 'admins', 'handover': 'handovers', 'delegation': 'delegations',
   };
   const tableName = tableMap[type];
-  if (!tableName) { console.warn('Unknown type for DB delete:', type); return; }
+  if (!tableName) return;
   try {
     const { error } = await _sb.from(tableName).delete().eq('id', id);
     if (error) console.error('DB Delete error ['+type+']:', error.message);
@@ -267,9 +264,6 @@ window.dbDelete = async function(type, id) {
   } catch(e) { console.error('dbDelete exception:', e.message || e); }
 };
 
-// ================================================================
-// INIT
-// ================================================================
 (async function startDB() {
   const bar = document.createElement('div');
   bar.id = 'db-loading-bar';
@@ -302,14 +296,16 @@ window.dbDelete = async function(type, id) {
     await loadFromSupabase();
 
     setupRealtime();
-
     _ready = true;
+
+    // sv function update karo ab ki _ready = true hai
+    window.sv = _svImpl;
+    window._supabaseSv = _svImpl;
 
     bar.style.background = '#1a5c3a';
     bar.textContent = '✅ Database connected! Data load ho gaya.';
     setTimeout(() => bar.remove(), 2500);
 
-    // FIX 3: Pehle Supabase se data aaye, tab login/session check karo
     if (typeof currentRole !== 'undefined' && currentRole) {
       if (typeof renderPage === 'function') renderPage(currentPage);
       if (typeof updateBadges === 'function') updateBadges();
@@ -329,5 +325,4 @@ window.dbDelete = async function(type, id) {
     bar.textContent = '❌ Database Error: ' + err.message + ' — Offline mode mein chal raha hai';
     setTimeout(() => bar.remove(), 7000);
   }
-// startDB properly band ho rahi hai yahan
 })();

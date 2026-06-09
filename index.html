@@ -951,7 +951,7 @@ tbody tr:hover{background:#f8fbff;}
 
 // DATA HELPERS
 var ld=(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch{return d;}};
-var sv=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+var sv=function(k,v){return(window._supabaseSv||(function(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}})).apply(this,[k,v]);};
 const uid=()=>'id-'+Date.now()+Math.random().toString(36).slice(2,6);
 const toDay=()=>new Date().toISOString().slice(0,10);
 const fDate=d=>d?new Date(d).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'2-digit'}):'—';
@@ -3581,7 +3581,6 @@ document.querySelectorAll('.moverlay').forEach(ov=>{ov.addEventListener('click',
   if(loadSession()){if(currentRole==='mainadmin')scheduleAllReminders();startApp();}
 })();
 </script>
-<script src="patch.js"></script>
 <script src="supabase_db.js"></script>
 </body>
 </html>

@@ -951,7 +951,7 @@ tbody tr:hover{background:#f8fbff;}
 
 // DATA HELPERS
 var ld=(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch{return d;}};
-var sv=function(k,v){return(window._supabaseSv||(function(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}})).apply(this,[k,v]);};
+var sv=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
 const uid=()=>'id-'+Date.now()+Math.random().toString(36).slice(2,6);
 const toDay=()=>new Date().toISOString().slice(0,10);
 const fDate=d=>d?new Date(d).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'2-digit'}):'—';
@@ -1250,11 +1250,11 @@ function sendAssignmentEmail(task, emails, names){
         <table width="100%" cellpadding="0" cellspacing="0">
           <tr>
             <td style="vertical-align:top;">
-              <div style="width:48px;height:48px;background:linear-gradient(135deg,#0b1e3d,#0d7377);border-radius:12px;display:inline-block;text-align:center;line-height:48px;font-size:22px;float:left;margin-right:14px;">🏥</div>
+              <div style="width:48px;height:48px;background:linear-gradient(135deg,#0b1e3d,#0d7377);border-radius:12px;display:inline-flex;align-items:center;justify-content:center;font-size:22px;float:left;margin-right:14px;">👨‍💼</div>
               <div style="overflow:hidden;">
-                <div style="font-size:15px;font-weight:800;color:#0b1e3d;">Hospital Operations System</div>
-                <div style="font-size:12px;color:#0d7377;font-weight:700;margin-top:2px;">Task Management Platform</div>
-                <div style="font-size:11px;color:#9aa5b4;margin-top:4px;">Assigned by: <strong style="color:#0b1e3d;">${assignerName}</strong> &nbsp;|&nbsp; ${assignerRole}</div>
+                <div style="font-size:15px;font-weight:800;color:#0b1e3d;">${assignerName}</div>
+                <div style="font-size:12px;color:#0d7377;font-weight:700;margin-top:2px;">${assignerRole}</div>
+                <div style="font-size:11px;color:#9aa5b4;margin-top:2px;">Hospital Operations System</div>
               </div>
             </td>
             <td align="right" style="vertical-align:middle;">
@@ -1482,8 +1482,8 @@ function scheduleReminderEmail(task){
               <div style="width:48px;height:48px;background:linear-gradient(135deg,#c05a00,#e07820);border-radius:12px;display:inline-block;text-align:center;line-height:48px;font-size:22px;float:left;margin-right:14px;">🏥</div>
               <div style="overflow:hidden;">
                 <div style="font-size:15px;font-weight:800;color:#0b1e3d;">Hospital Operations System</div>
-                <div style="font-size:12px;color:#c05a00;font-weight:700;margin-top:2px;">Task Management Platform</div>
-                <div style="font-size:11px;color:#9aa5b4;margin-top:4px;">Assigned by: <strong style="color:#0b1e3d;">${t.createdBy||'Admin'}</strong></div>
+                <div style="font-size:12px;color:#c05a00;font-weight:700;margin-top:2px;">Automated Reminder Service</div>
+                <div style="font-size:11px;color:#9aa5b4;margin-top:2px;">Task Management Platform</div>
               </div>
             </td>
             <td align="right" style="vertical-align:middle;">

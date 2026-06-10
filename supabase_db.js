@@ -1,12 +1,11 @@
 // ================================================================
 //  supabase_db.js — Hospital Ops System
-//  FIXED VERSION
+//  UPDATED VERSION — Delete + Restore fixes
 //
-//  Fixes:
-//  1. employees table mein username column add kiya
-//  2. admins table password column NULL na ho
-//  3. Login attempt DB load ke baad hoga (session restore delay fix)
-//  4. updateAppVariable more robust
+//  Changes from original:
+//  1. employees table mein username column support (already was there)
+//  2. dbDelete() mein 'trash' type add kiya — restore ke baad
+//     trash record Supabase se bhi hata sake
 // ================================================================
 
 const SB_URL = 'https://jlltvarrtcgzsmqxlssb.supabase.co';
@@ -26,13 +25,12 @@ const TABLES = {
     unpack: r => ({ id: r.id, name: r.name||'', head: r.head||'', contact: r.contact||'' }),
   },
 
-  // ✅ FIX 1: username field add kiya employees mein
   'hops-employees': {
     table: 'employees',
     pack:   o => ({
       id:          o.id,
       name:        o.name        || '',
-      username:    o.username    || o.name || '',   // ← username save karo
+      username:    o.username    || o.name || '',
       dept:        o.dept        || '',
       designation: o.designation || '',
       email:       o.email       || '',
@@ -41,7 +39,7 @@ const TABLES = {
     unpack: r => ({
       id:          r.id,
       name:        r.name        || '',
-      username:    r.username    || r.name || '',   // ← username restore karo
+      username:    r.username    || r.name || '',
       dept:        r.dept        || '',
       designation: r.designation || '',
       email:       r.email       || '',
@@ -459,6 +457,9 @@ function setupRealtime() {
 
 // ================================================================
 //  dbDelete() — Supabase DB se record permanently delete karo
+//
+//  ✅ FIX: 'trash' type add kiya — restore ke baad trash record
+//          Supabase se bhi permanently hata sake
 // ================================================================
 window.dbDelete = async function(type, id) {
   if (!_ready || !_sb) {
@@ -474,6 +475,7 @@ window.dbDelete = async function(type, id) {
     'admin':      'admins',
     'handover':   'handovers',
     'delegation': 'delegations',
+    'trash':      'trash',      // ← NEW: restore ke baad trash record delete
   };
 
   const tableName = tableMap[type];
@@ -543,16 +545,11 @@ window.dbDelete = async function(type, id) {
     bar.textContent = '✅ Database connected! Data load ho gaya.';
     setTimeout(() => bar.remove(), 2500);
 
-    // ✅ FIX 2: DB load hone ke BAAD session restore karo
-    // Pehle app variables mein fresh data aa chuka hai — ab login safe hai
     if (typeof currentRole !== 'undefined' && currentRole) {
-      // User pehle se login hai — refresh karo
       if (typeof renderPage === 'function') renderPage(currentPage);
       if (typeof updateBadges === 'function') updateBadges();
       if (typeof buildSidebar === 'function') buildSidebar();
     } else {
-      // ✅ FIX 3: Session restore — DB data load hone ke baad try karo
-      // Agar auto-restore pehle fail hua tha, ab fresh try karo
       if (typeof loadSession === 'function' && loadSession()) {
         if (currentRole === 'mainadmin' && typeof scheduleAllReminders === 'function') {
           scheduleAllReminders();

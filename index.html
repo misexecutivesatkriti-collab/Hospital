@@ -743,8 +743,9 @@ function openTrashConfirm(type,id,label){
   document.getElementById('m-trash-confirm').classList.add('open');
 }
 
-// ✅ FIX 1: confirmTrash() — ab Supabase se bhi delete karta hai
-function confirmTrash(){
+// ✅ FIX 1: confirmTrash() — ab Supabase se bhi delete karta hai, aur
+// delete fail hone par (e.g. missing RLS DELETE policy) user ko clearly batata hai
+async function confirmTrash(){
   const type=document.getElementById('tr-type').value,id=document.getElementById('tr-id').value;
   let data=null;
   if(type==='task'){data=tasks.find(t=>t.id===id);tasks=tasks.filter(t=>t.id!==id);sv('hops-tasks',tasks);}
@@ -754,8 +755,13 @@ function confirmTrash(){
   else if(type==='dept'){data=depts.find(d=>d.id===id);depts=depts.filter(d=>d.id!==id);sv('hops-depts',depts);}
   else if(type==='admin'){data=admins.find(a=>a.id===id);admins=admins.filter(a=>a.id!==id);sv('hops-admins',admins);}
   if(data){
-    // ✅ FIX 1: Supabase se bhi permanently delete karo
-    if(typeof window.dbDelete==='function') window.dbDelete(type, id);
+    // ✅ FIX 1: Supabase se bhi permanently delete karo — result check karke
+    if(typeof window.dbDelete==='function'){
+      const res=await window.dbDelete(type, id);
+      if(res && res.ok===false && res.reason!=='not_ready'){
+        alert('⚠️ Item local trash mein chala gaya, lekin Supabase database se delete NAHI hua!\n\nReason: '+(res.reason==='no_rows'?'Aapke Supabase table "'+(res.table||type)+'" pe DELETE permission (RLS policy) missing lag rahi hai.':res.message||res.reason)+'\n\nJab tak yeh fix nahi hota, refresh karne par yeh item wapas aa sakta hai. Supabase SQL editor mein DELETE policy add karein.');
+      }
+    }
     trash.push({id:uid(),type,data,deletedBy:currentUser.name||'ADMIN',deletedAt:new Date().toISOString(),autoDeleteAt:new Date(Date.now()+ONE_YEAR_MS).toISOString()});
     sv('hops-trash',trash);logAct('DELETE '+type.toUpperCase(),data.name||data.title||id);
   }
@@ -778,7 +784,7 @@ function trashPage(){
 }
 
 // ✅ FIX 3: restoreFromTrash() — NAYA FUNCTION
-function restoreFromTrash(trashItemId){
+async function restoreFromTrash(trashItemId){
   const item=trash.find(t=>t.id===trashItemId);
   if(!item){alert('❌ Item nahi mila!');return;}
   const itemLabel=item.data?.name||item.data?.title||'Item';
@@ -800,7 +806,12 @@ function restoreFromTrash(trashItemId){
   sv(cfg.key,newArr);
   trash=trash.filter(t=>t.id!==trashItemId);
   sv('hops-trash',trash);
-  if(typeof window.dbDelete==='function') window.dbDelete('trash',trashItemId);
+  if(typeof window.dbDelete==='function'){
+    const res=await window.dbDelete('trash',trashItemId);
+    if(res && res.ok===false && res.reason!=='not_ready'){
+      console.warn('⚠️ Trash record Supabase se delete nahi hua (item already restored ho gaya hai, yeh bas trash table ka leftover hai):', res);
+    }
+  }
   logAct('RESTORED '+item.type.toUpperCase(),itemLabel);
   updateBadges();renderPage('trash');
   alert('✅ "'+itemLabel+'" successfully restore ho gaya!');

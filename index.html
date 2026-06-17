@@ -754,6 +754,7 @@ async function confirmTrash(){
   else if(type==='employee'){data=employees.find(e=>e.id===id);employees=employees.filter(e=>e.id!==id);sv('hops-employees',employees);}
   else if(type==='dept'){data=depts.find(d=>d.id===id);depts=depts.filter(d=>d.id!==id);sv('hops-depts',depts);}
   else if(type==='admin'){data=admins.find(a=>a.id===id);admins=admins.filter(a=>a.id!==id);sv('hops-admins',admins);}
+  else if(type==='delegation'){data=delegations.find(x=>x.id===id);delegations=delegations.filter(x=>x.id!==id);sv('hops-delegations',delegations);}
   if(data){
     // ✅ FIX 1: Supabase se bhi permanently delete karo — result check karke
     if(typeof window.dbDelete==='function'){
@@ -763,23 +764,23 @@ async function confirmTrash(){
       }
     }
     trash.push({id:uid(),type,data,deletedBy:currentUser.name||'ADMIN',deletedAt:new Date().toISOString(),autoDeleteAt:new Date(Date.now()+ONE_YEAR_MS).toISOString()});
-    sv('hops-trash',trash);logAct('DELETE '+type.toUpperCase(),data.name||data.title||id);
+    sv('hops-trash',trash);logAct('DELETE '+type.toUpperCase(),data.name||data.title||data.taskName||id);
   }
   closeMod('m-trash-confirm');updateBadges();renderPage(currentPage);
 }
 
 function openTrashClearModal(){document.getElementById('tc-pass').value='';document.getElementById('tc-err').style.display='none';document.getElementById('m-trash-clear').classList.add('open');}
-function confirmTrashClear(){const pass=document.getElementById('tc-pass').value,err=document.getElementById('tc-err');if(!pass){err.textContent='❌ Password required!';err.style.display='block';return;}if(pass!==MAIN_ADMIN_PASS){err.textContent='❌ Wrong Password!';err.style.display='block';document.getElementById('tc-pass').value='';return;}trash=[];sv('hops-trash',trash);err.style.display='none';document.getElementById('tc-pass').value='';closeMod('m-trash-clear');logAct('TRASH CLEARED','All items permanently deleted');renderPage('trash');alert('✅ Saara trash clear ho gaya!');}
+async function confirmTrashClear(){const pass=document.getElementById('tc-pass').value,err=document.getElementById('tc-err');if(!pass){err.textContent='❌ Password required!';err.style.display='block';return;}if(pass!==MAIN_ADMIN_PASS){err.textContent='❌ Wrong Password!';err.style.display='block';document.getElementById('tc-pass').value='';return;}if(typeof window.dbDelete==='function'){await Promise.all(trash.map(t=>window.dbDelete('trash',t.id)));}trash=[];sv('hops-trash',trash);err.style.display='none';document.getElementById('tc-pass').value='';closeMod('m-trash-clear');logAct('TRASH CLEARED','All items permanently deleted');renderPage('trash');alert('✅ Saara trash clear ho gaya!');}
 
 // ✅ FIX 2: trashPage() — Restore button + Actions column
 function trashPage(){
   purgeOldTrash();
-  const typeLabel={task:'📋 Task',issue:'⚠️ Issue',handover:'🔄 Handover',employee:'👤 Employee',dept:'🏢 Dept',admin:'👨‍💼 Admin'};
+  const typeLabel={task:'📋 Task',issue:'⚠️ Issue',handover:'🔄 Handover',employee:'👤 Employee',dept:'🏢 Dept',admin:'👨‍💼 Admin',delegation:'📤 Delegation'};
   return`<div class="alrt alrt-gray">🔒 Items auto-delete after 1 year. (${trash.length} items) | ♻️ Restore button se item wapas la sakte hain.</div>
   <div style="margin-bottom:12px;"><button class="btn btn-red btn-sm" onclick="openTrashClearModal()">🧹 Clear All Trash</button></div>
   ${trash.length===0?`<div class="empty"><div class="ico">🗑️</div><p>TRASH IS EMPTY</p></div>`:`
   <div class="card" style="padding:0;overflow:hidden;"><div class="tbl-wrap"><table><thead><tr><th>Type</th><th>Name / Title</th><th>Deleted By</th><th>Deleted On</th><th>Auto-Delete In</th><th>Actions</th></tr></thead>
-    <tbody>${[...trash].sort((a,b)=>new Date(b.deletedAt)-new Date(a.deletedAt)).map(t=>{const label=t.data?.name||t.data?.title||t.data?.id||'—';const daysLeft=Math.ceil((new Date(t.autoDeleteAt)-Date.now())/(1000*60*60*24));return`<tr class="trash-row"><td>${typeLabel[t.type]||t.type}</td><td><strong>${label}</strong></td><td>${t.deletedBy}</td><td style="font-size:11px;color:var(--muted);">${fDate(t.deletedAt)}</td><td><span class="badge ${daysLeft<30?'bg-red':'bg-gray'}">${daysLeft} days</span></td><td><button class="btn btn-green btn-sm" onclick="restoreFromTrash('${t.id}')" data-tip="Wapas restore karein">♻️ Restore</button></td></tr>`;}).join('')}</tbody>
+    <tbody>${[...trash].sort((a,b)=>new Date(b.deletedAt)-new Date(a.deletedAt)).map(t=>{const label=t.data?.name||t.data?.title||t.data?.taskName||t.data?.id||'—';const daysLeft=Math.ceil((new Date(t.autoDeleteAt)-Date.now())/(1000*60*60*24));return`<tr class="trash-row"><td>${typeLabel[t.type]||t.type}</td><td><strong>${label}</strong></td><td>${t.deletedBy}</td><td style="font-size:11px;color:var(--muted);">${fDate(t.deletedAt)}</td><td><span class="badge ${daysLeft<30?'bg-red':'bg-gray'}">${daysLeft} days</span></td><td><button class="btn btn-green btn-sm" onclick="restoreFromTrash('${t.id}')" data-tip="Wapas restore karein">♻️ Restore</button></td></tr>`;}).join('')}</tbody>
   </table></div></div>`}`;
 }
 
@@ -787,15 +788,16 @@ function trashPage(){
 async function restoreFromTrash(trashItemId){
   const item=trash.find(t=>t.id===trashItemId);
   if(!item){alert('❌ Item nahi mila!');return;}
-  const itemLabel=item.data?.name||item.data?.title||'Item';
+  const itemLabel=item.data?.name||item.data?.title||item.data?.taskName||'Item';
   if(!confirm('♻️ "'+itemLabel+'" ko restore karein?\n\nYeh item wapas uski original jagah aa jayega aur database mein bhi update ho jayega.'))return;
   const typeMap={
-    task:     {getArr:()=>tasks,     key:'hops-tasks',       setArr:(v)=>{tasks=v;}},
-    issue:    {getArr:()=>issues,    key:'hops-issues',      setArr:(v)=>{issues=v;}},
-    handover: {getArr:()=>handovers, key:'hops-handovers',   setArr:(v)=>{handovers=v;}},
-    employee: {getArr:()=>employees, key:'hops-employees',   setArr:(v)=>{employees=v;}},
-    dept:     {getArr:()=>depts,     key:'hops-depts',       setArr:(v)=>{depts=v;}},
-    admin:    {getArr:()=>admins,    key:'hops-admins',      setArr:(v)=>{admins=v;}},
+    task:       {getArr:()=>tasks,       key:'hops-tasks',       setArr:(v)=>{tasks=v;}},
+    issue:      {getArr:()=>issues,      key:'hops-issues',      setArr:(v)=>{issues=v;}},
+    handover:   {getArr:()=>handovers,   key:'hops-handovers',   setArr:(v)=>{handovers=v;}},
+    employee:   {getArr:()=>employees,   key:'hops-employees',   setArr:(v)=>{employees=v;}},
+    dept:       {getArr:()=>depts,       key:'hops-depts',       setArr:(v)=>{depts=v;}},
+    admin:      {getArr:()=>admins,      key:'hops-admins',      setArr:(v)=>{admins=v;}},
+    delegation: {getArr:()=>delegations, key:'hops-delegations', setArr:(v)=>{delegations=v;}},
   };
   const cfg=typeMap[item.type];
   if(!cfg){alert('❌ Is type ka restore support nahi hai: '+item.type);return;}
@@ -1172,7 +1174,7 @@ function filterDelegations(){
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:6px;"><div><div style="font-size:14px;font-weight:800;">${d.taskName}</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:5px;">${d.dept?dTag(d.dept):''}${bdg(d.priority,'priority')}${sb}</div></div><div style="text-align:right;font-size:11px;color:var(--muted);">Expected: <strong style="color:var(--teal);">${fDate(d.expDate)}</strong>${d.expTime?' '+d.expTime:''}</div></div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;font-size:12px;"><span>👤 Doer: <strong>${d.doerName}</strong></span><span>👨‍💼 By: <strong>${d.delegatedBy}</strong></span>${extraDays>0?`<span style="color:var(--orange);font-weight:800;">+${extraDays} extra days</span>`:''}${d.status==='done'?`<span style="color:var(--muted);">✅ ${fDate(d.actualDate)}${d.actualTime?' '+d.actualTime:''}</span>`:''}</div>
       ${d.notes?`<div style="font-size:11px;color:var(--muted);margin-top:5px;background:#f8fbff;padding:5px 9px;border-radius:6px;">📝 ${d.notes}</div>`:''}
-      <div style="margin-top:9px;display:flex;gap:6px;flex-wrap:wrap;" onclick="event.stopPropagation()">${canAdd&&d.status!=='done'?`<button class="btn btn-green btn-sm" onclick="openDelDone('${d.id}')">✅ Mark Done</button>`:''} ${canAdd&&d.status!=='done'?`<button class="btn btn-orange btn-sm" onclick="openExtendModal('${d.id}')">📅 Extend Date</button>`:''} ${canAdd?`<button class="ibtn" onclick="openDelMod('${d.id}')">✏️</button>`:''} ${canAdd?`<button class="ibtn del" onclick="if(confirm('Delete?')){delegations=delegations.filter(x=>x.id!=='${d.id}');sv('hops-delegations',delegations);renderPage(currentPage);}">🗑️</button>`:''}</div>
+      <div style="margin-top:9px;display:flex;gap:6px;flex-wrap:wrap;" onclick="event.stopPropagation()">${canAdd&&d.status!=='done'?`<button class="btn btn-green btn-sm" onclick="openDelDone('${d.id}')">✅ Mark Done</button>`:''} ${canAdd&&d.status!=='done'?`<button class="btn btn-orange btn-sm" onclick="openExtendModal('${d.id}')">📅 Extend Date</button>`:''} ${canAdd?`<button class="ibtn" onclick="openDelMod('${d.id}')">✏️</button>`:''} ${canAdd?`<button class="ibtn del" onclick="openTrashConfirm('delegation','${d.id}','${(d.taskName||'').replace(/'/g,"\\'")}')">🗑️</button>`:''}</div>
     </div>`;
   }).join('');
 }
@@ -1208,7 +1210,7 @@ function linkBoxPage(){
 function openLinkMod(){document.getElementById('lnk-eid').value='';document.getElementById('lnk-name').value='';document.getElementById('lnk-url').value='';document.getElementById('lnk-emoji').value='';document.getElementById('link-m-title').textContent='➕ New Link Add Karein';document.getElementById('m-link').classList.add('open');}
 function openEditLinkMod(id){const links=getLinks(),l=links.find(x=>x.id===id);if(!l)return;document.getElementById('lnk-eid').value=id;document.getElementById('lnk-name').value=l.name;document.getElementById('lnk-url').value=l.url;document.getElementById('lnk-emoji').value=l.emoji||'';document.getElementById('link-m-title').textContent='✏️ Link Edit Karein';document.getElementById('m-link').classList.add('open');}
 function saveLinkEntry(){const name=document.getElementById('lnk-name').value.trim();let url=document.getElementById('lnk-url').value.trim();const emoji=document.getElementById('lnk-emoji').value.trim()||'🔗',eid=document.getElementById('lnk-eid').value;if(!name){alert('❌ Link ka naam zaroor likhein!');return;}if(!url){alert('❌ URL zaroor likhein!');return;}if(!/^https?:\/\//i.test(url))url='https://'+url;const links=getLinks();if(eid){const idx=links.findIndex(l=>l.id===eid);if(idx>-1){links[idx]={...links[idx],name,url,emoji};}}else{links.push({id:uid(),name,url,emoji,addedAt:new Date().toISOString()});}saveLinks(links);closeMod('m-link');renderPage('link-box');}
-function deleteLink(id){if(!confirm('❓ Yeh link delete karein?'))return;const links=getLinks().filter(l=>l.id!==id);saveLinks(links);renderPage('link-box');}
+function deleteLink(id){if(!confirm('❓ Yeh link delete karein?'))return;const links=getLinks().filter(l=>l.id!==id);saveLinks(links);if(typeof window.dbDelete==='function')window.dbDelete('link',id);renderPage('link-box');}
 
 // ══════════════════════════════════════════
 //  STAFF SETTINGS + ASSIGN TASK

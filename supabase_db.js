@@ -487,6 +487,7 @@ window.dbDelete = async function(type, id) {
     'handover':   'handovers',
     'delegation': 'delegations',
     'trash':      'trash',
+    'link':       'user_links',
   };
 
   const tableName = tableMap[type];

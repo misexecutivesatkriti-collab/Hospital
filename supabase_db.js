@@ -6,6 +6,11 @@
 //  1. employees table mein username column support (already was there)
 //  2. dbDelete() mein 'trash' type add kiya — restore ke baad
 //     trash record Supabase se bhi hata sake
+//  3. ✅ NEW FIX: dbDelete() ab verify karta hai ki row actually
+//     delete hua ya nahi (RLS policy missing hone par Supabase
+//     error nahi deta, bas 0 rows delete karta hai — silently).
+//     Ab .select('id') chain karke confirm karte hain ki delete
+//     successful tha ya nahi, aur {ok:true/false} return karte hain.
 // ================================================================
 
 const SB_URL = 'https://jlltvarrtcgzsmqxlssb.supabase.co';
@@ -458,15 +463,21 @@ function setupRealtime() {
 // ================================================================
 //  dbDelete() — Supabase DB se record permanently delete karo
 //
-//  ✅ FIX: 'trash' type add kiya — restore ke baad trash record
-//          Supabase se bhi permanently hata sake
+//  ✅ FIX (this update): pehle yeh function delete call karke
+//  error null aane par turant "success" maan leta tha. Lekin
+//  Supabase mein agar DELETE ke liye RLS policy missing ho, to
+//  query bina koi error diye 0 rows delete karti hai — isliye
+//  delete "successful" dikhta tha console mein, lekin row Supabase
+//  mein reh jaata tha, aur refresh pe wapas aa jaata tha.
+//
+//  Ab .select('id') chain karke yeh confirm karte hain ki kitni
+//  rows actually delete hui. Agar error nahi hai par 0 rows
+//  delete hui, to ise FAILURE maante hain (RLS issue ka strong
+//  signal) aur caller ko {ok:false, reason:'no_rows'} return
+//  karte hain, taki UI user ko clearly batae ki Supabase se delete
+//  nahi hua.
 // ================================================================
 window.dbDelete = async function(type, id) {
-  if (!_ready || !_sb) {
-    console.warn('⚠️ DB not ready — delete skipped for', type, id);
-    return;
-  }
-
   const tableMap = {
     'task':       'tasks',
     'issue':      'issues',
@@ -475,24 +486,41 @@ window.dbDelete = async function(type, id) {
     'admin':      'admins',
     'handover':   'handovers',
     'delegation': 'delegations',
-    'trash':      'trash',      // ← NEW: restore ke baad trash record delete
+    'trash':      'trash',
   };
 
   const tableName = tableMap[type];
   if (!tableName) {
     console.warn('⚠️ Unknown type for DB delete:', type);
-    return;
+    return { ok: false, reason: 'unknown_type' };
+  }
+
+  if (!_ready || !_sb) {
+    console.warn('⚠️ DB not ready — delete skipped for', type, id);
+    return { ok: false, reason: 'not_ready' };
   }
 
   try {
-    const { error } = await _sb.from(tableName).delete().eq('id', id);
+    const { data, error } = await _sb.from(tableName).delete().eq('id', id).select('id');
+
     if (error) {
       console.error('❌ DB Delete error ['+type+']:', error.message);
-    } else {
-      console.log('✅ DB se delete ho gaya ['+type+'] id:', id);
+      return { ok: false, reason: 'error', message: error.message };
     }
+
+    if (!data || data.length === 0) {
+      // No error, but nothing was actually deleted — almost always
+      // means Supabase RLS has no DELETE policy on this table.
+      console.error('❌ DB Delete returned 0 rows ['+type+'] id:', id, '— likely missing RLS DELETE policy on table:', tableName);
+      return { ok: false, reason: 'no_rows', table: tableName };
+    }
+
+    console.log('✅ DB se delete ho gaya ['+type+'] id:', id);
+    return { ok: true };
+
   } catch(e) {
     console.error('❌ dbDelete exception:', e.message || e);
+    return { ok: false, reason: 'exception', message: e.message || String(e) };
   }
 };
 
@@ -565,4 +593,4 @@ window.dbDelete = async function(type, id) {
     setTimeout(() => bar.remove(), 7000);
   }
 
-})();
+})()

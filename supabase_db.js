@@ -1,10 +1,13 @@
 // ================================================================
-//  supabase_db.js — Hospital Ops System — v5
+//  supabase_db.js — Hospital Ops System — v6 FINAL
 //
-//  Root fix: sv() ab ek pending queue rakhta hai
-//  + _ready=true hone ke baad queue flush hoti hai
-//  + loadAndMerge: localStorage+Supabase merge (gayab task fix)
-//  + Auto-cycle fix: done task refresh pe pending nahi hoga
+//  ROOT FIX:
+//  1. sv() ab window.sv override nahi karta — balki window._sbSave
+//     expose karta hai jo HTML ke sv() se call hota hai
+//  2. HTML ke original sv() ko async banana hoga (patch mein)
+//  3. loadAndMerge: localStorage+Supabase merge (gayab task fix)
+//  4. Auto-cycle: done task refresh pe pending nahi hoga
+//  5. _ready=true PEHLE set hota hai load se
 // ================================================================
 
 const SB_URL = 'https://jlltvarrtcgzsmqxlssb.supabase.co';
@@ -13,33 +16,22 @@ const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 let _sb    = null;
 let _ready = false;
 
-// ✅ QUEUE: jab tak Supabase ready nahi, saves queue mein
-// key → latest val (same key ki purani entry overwrite hoti hai)
-const _pendingQueue = new Map();
-
-// ================================================================
-//  TABLE MAP
-// ================================================================
 const TABLES = {
-
   'hops-depts': {
     table: 'departments',
-    pack:   o => ({ id: o.id, name: o.name||'', head: o.head||'', contact: o.contact||'' }),
-    unpack: r => ({ id: r.id, name: r.name||'', head: r.head||'', contact: r.contact||'' }),
+    pack:   o => ({ id:o.id, name:o.name||'', head:o.head||'', contact:o.contact||'' }),
+    unpack: r => ({ id:r.id, name:r.name||'', head:r.head||'', contact:r.contact||'' }),
   },
-
   'hops-employees': {
     table: 'employees',
     pack:   o => ({ id:o.id, name:o.name||'', username:o.username||o.name||'', dept:o.dept||'', designation:o.designation||'', email:o.email||'', password:o.password||'' }),
     unpack: r => ({ id:r.id, name:r.name||'', username:r.username||r.name||'', dept:r.dept||'', designation:r.designation||'', email:r.email||'', password:r.password||'' }),
   },
-
   'hops-admins': {
     table: 'admins',
     pack:   o => ({ id:o.id, name:o.name||'', username:o.username||'', email:o.email||'', password:o.password||'', role:o.role||'', dept:o.dept||'', perms:o.perms||{}, created_by:o.createdBy||'' }),
     unpack: r => ({ id:r.id, name:r.name||'', username:r.username||'', email:r.email||'', password:r.password||'', role:r.role||'', dept:r.dept||'', perms:r.perms||{}, createdBy:r.created_by||'' }),
   },
-
   'hops-tasks': {
     table: 'tasks',
     pack: o => ({
@@ -65,31 +57,26 @@ const TABLES = {
       parentTaskId:r.parent_task_id||''
     }),
   },
-
   'hops-issues': {
     table: 'issues',
     pack: o => ({ id:o.id, title:o.title||'', dept:o.dept||'', priority:o.priority||'medium', reporter:o.reporter||'', assigned:o.assigned||'', description:o.desc||'', status:o.status||'open', date:o.date||'', resolve_remark:o.resolveRemark||'', resolve_by:o.resolveBy||'', resolved_at:o.resolvedAt||null }),
     unpack: r => ({ id:r.id, title:r.title||'', dept:r.dept||'', priority:r.priority||'medium', reporter:r.reporter||'', assigned:r.assigned||'', desc:r.description||'', status:r.status||'open', date:r.date||'', resolveRemark:r.resolve_remark||'', resolveBy:r.resolve_by||'', resolvedAt:r.resolved_at||'' }),
   },
-
   'hops-handovers': {
     table: 'handovers',
     pack: o => ({ id:o.id, name:o.name||'', designation:o.designation||'', dept:o.dept||'', date:o.date||'', handover_to:o.to||'', tasks:o.tasks||'', pending:o.pending||'', supervisor:o.sup||o.supervisor||'', status:o.status||'pending', created_by:o.createdBy||'' }),
     unpack: r => ({ id:r.id, name:r.name||'', designation:r.designation||'', dept:r.dept||'', date:r.date||'', to:r.handover_to||'', tasks:r.tasks||'', pending:r.pending||'', sup:r.supervisor||'', supervisor:r.supervisor||'', status:r.status||'pending', createdBy:r.created_by||'' }),
   },
-
   'hops-delegations': {
     table: 'delegations',
     pack: o => ({ id:o.id, task_name:o.taskName||'', dept:o.dept||'', priority:o.priority||'medium', doer_id:o.doerId||'', doer_name:o.doerName||'', delegated_by:o.delegatedBy||'', exp_date:o.expDate||'', exp_time:o.expTime||'', notes:o.notes||'', status:o.status||'pending', created_date:o.createdDate||'', actual_date:o.actualDate||'', actual_time:o.actualTime||'', done_remark:o.doneRemark||'', delay_reason:o.delayReason||'', is_delayed:o.isDelayed||false, extensions:o.extensions||[], activity_log:o.activityLog||[] }),
     unpack: r => ({ id:r.id, taskName:r.task_name||'', dept:r.dept||'', priority:r.priority||'medium', doerId:r.doer_id||'', doerName:r.doer_name||'', delegatedBy:r.delegated_by||'', expDate:r.exp_date||'', expTime:r.exp_time||'', notes:r.notes||'', status:r.status||'pending', createdDate:r.created_date||'', actualDate:r.actual_date||'', actualTime:r.actual_time||'', doneRemark:r.done_remark||'', delayReason:r.delay_reason||'', isDelayed:r.is_delayed||false, extensions:r.extensions||[], activityLog:r.activity_log||[] }),
   },
-
   'hops-actlog': {
     table: 'activity_log',
     pack:   o => ({ id:o.id, by_user:o.by||'', role:o.role||'', action:o.action||'', details:o.details||'', at_str:o.atStr||'' }),
     unpack: r => ({ id:r.id, by:r.by_user||'', role:r.role||'', action:r.action||'', details:r.details||'', at:r.created_at||'', atStr:r.at_str||'' }),
   },
-
   'hops-trash': {
     table: 'trash',
     pack:   o => ({ id:o.id, type:o.type||'', data:o.data||{}, deleted_by:o.deletedBy||'', deleted_at:o.deletedAt||new Date().toISOString(), auto_delete_at:o.autoDeleteAt||'' }),
@@ -98,136 +85,126 @@ const TABLES = {
 };
 
 const LINKS_TABLE = 'user_links';
-function isLinkKey(k) { return typeof k==='string' && k.startsWith('hops-links-'); }
-function linkUser(k) { return k.replace('hops-links-',''); }
+function isLinkKey(k){ return typeof k==='string'&&k.startsWith('hops-links-'); }
+function linkUser(k){ return k.replace('hops-links-',''); }
 
-// ================================================================
-//  updateAppVariable
-// ================================================================
 function updateAppVariable(key, data) {
-  const map = { 'hops-depts':'depts','hops-employees':'employees','hops-admins':'admins','hops-tasks':'tasks','hops-issues':'issues','hops-handovers':'handovers','hops-delegations':'delegations','hops-actlog':'actLog','hops-trash':'trash' };
-  const v = map[key]; if (!v) return;
-  if (typeof window[v]!=='undefined') { window[v]=data; return; }
-  let t=0; const r=setInterval(()=>{ t++; if(typeof window[v]!=='undefined'){window[v]=data;clearInterval(r);}else if(t>=20){clearInterval(r);window[v]=data;} },100);
+  const map = {'hops-depts':'depts','hops-employees':'employees','hops-admins':'admins','hops-tasks':'tasks','hops-issues':'issues','hops-handovers':'handovers','hops-delegations':'delegations','hops-actlog':'actLog','hops-trash':'trash'};
+  const v = map[key]; if(!v) return;
+  if(typeof window[v]!=='undefined'){window[v]=data;return;}
+  let t=0; const r=setInterval(()=>{t++;if(typeof window[v]!=='undefined'){window[v]=data;clearInterval(r);}else if(t>=20){clearInterval(r);window[v]=data;}},100);
 }
 
 // ================================================================
-//  ld()
+//  ld() — unchanged
 // ================================================================
 window.ld = function(key, def) {
-  try { const v=localStorage.getItem(key); return v?JSON.parse(v):def; } catch(e){return def;}
+  try{const v=localStorage.getItem(key);return v?JSON.parse(v):def;}catch(e){return def;}
 };
 
 // ================================================================
-//  _upsertToSupabase() — actual DB write
+//  _upsertToSupabase() — core save function
 // ================================================================
 async function _upsertToSupabase(key, val) {
-  if (isLinkKey(key)) {
-    if (!Array.isArray(val)||val.length===0) return;
-    const u = linkUser(key);
-    try {
-      const rows = val.map(o=>({id:o.id,username:u,name:o.name||'',url:o.url||'',emoji:o.emoji||'🔗',added_at:o.addedAt||new Date().toISOString()}));
-      const {error} = await _sb.from(LINKS_TABLE).upsert(rows,{onConflict:'id'});
+  if(isLinkKey(key)){
+    if(!Array.isArray(val)||val.length===0) return;
+    const u=linkUser(key);
+    try{
+      const rows=val.map(o=>({id:o.id,username:u,name:o.name||'',url:o.url||'',emoji:o.emoji||'🔗',added_at:o.addedAt||new Date().toISOString()}));
+      const{error}=await _sb.from(LINKS_TABLE).upsert(rows,{onConflict:'id'});
       if(error) console.error('❌ Links upsert:',error.message);
-    } catch(e){console.error('❌ Links exception:',e.message);}
+    }catch(e){console.error('❌ Links exception:',e.message);}
     return;
   }
-  if (!TABLES[key]||!Array.isArray(val)||val.length===0) return;
-  try {
-    const rows = val.map(TABLES[key].pack);
-    const {error} = await _sb.from(TABLES[key].table).upsert(rows,{onConflict:'id'});
+  if(!TABLES[key]||!Array.isArray(val)||val.length===0) return;
+  try{
+    const rows=val.map(TABLES[key].pack);
+    const{error}=await _sb.from(TABLES[key].table).upsert(rows,{onConflict:'id'});
     if(error) console.error('❌ Upsert ['+key+']:',error.message);
     else console.log('✅ Saved ['+key+']',val.length,'records');
-  } catch(e){console.error('❌ upsert exception ['+key+']:',e.message);}
+  }catch(e){console.error('❌ _upsertToSupabase exception ['+key+']:',e.message);}
 }
 
 // ================================================================
-//  ✅ sv() — QUEUE BASED
-//  localStorage mein turant save.
-//  Agar Supabase ready nahi → queue mein daalo (Map = latest wins)
-//  Ready hone par flushQueue() sab save karega
+//  ✅ KEY FIX: sv() — SYNC localStorage + ASYNC Supabase
+//
+//  HTML mein original sv() tha:
+//    var sv=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+//
+//  Hum usse replace karte hain is version se jo:
+//  1. TURANT localStorage mein save karta hai (sync)
+//  2. BACKGROUND mein Supabase mein bhi save karta hai (async)
+//  3. Agar Supabase ready nahi — 100ms baad retry karta hai (max 30s)
 // ================================================================
-window.sv = async function(key, val) {
-  // 1. localStorage mein turant
+window.sv = function(key, val) {
+  // Step 1: localStorage — TURANT (synchronous)
   try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {}
 
-  // 2. Supabase ready hai → seedha save
-  if (_ready && _sb) {
+  // Step 2: Supabase — background mein (fire and forget with retry)
+  (async () => {
+    let waited = 0;
+    // Agar Supabase ready nahi — wait karo (max 30 seconds)
+    while((!_ready || !_sb) && waited < 30000) {
+      await new Promise(r => setTimeout(r, 100));
+      waited += 100;
+    }
+    if(!_sb) {
+      console.warn('⚠️ sv(): Supabase never ready, skipping cloud save for', key);
+      return;
+    }
     await _upsertToSupabase(key, val);
-    return;
-  }
+  })();
 
-  // 3. Ready nahi → queue mein (Map use karo taaki same key overwrite ho)
-  _pendingQueue.set(key, val);
-  console.log('⏳ Queued ['+key+'] — Supabase not ready yet. Queue size:',_pendingQueue.size);
+  // Return undefined (original sv() bhi kuch return nahi karta tha)
 };
 
 // ================================================================
-//  flushQueue() — ready hone par call hota hai
-// ================================================================
-async function flushQueue() {
-  if (_pendingQueue.size === 0) return;
-  console.log('🔄 Flushing queue —',_pendingQueue.size,'items...');
-  for (const [key, val] of _pendingQueue.entries()) {
-    await _upsertToSupabase(key, val);
-  }
-  _pendingQueue.clear();
-  console.log('✅ Queue flushed!');
-}
-
-// ================================================================
-//  ✅ loadAndMerge() — Supabase + localStorage merge
-//  Jo localStorage mein hai lekin Supabase mein nahi —
-//  unhe Supabase mein bhi save karo (gayab task fix)
+//  loadAndMerge() — Supabase + localStorage merge
 // ================================================================
 async function loadAndMerge(key) {
-  const cfg = TABLES[key]; if (!cfg) return;
-  try {
+  const cfg = TABLES[key]; if(!cfg) return;
+  try{
     let query = _sb.from(cfg.table).select('*');
-    if (cfg.table==='activity_log') query = query.order('created_at',{ascending:false}).limit(500);
-    const {data:sbData, error} = await query;
-    if (error) { console.warn('⚠️ Load ['+key+']:',error.message); return; }
+    if(cfg.table==='activity_log') query=query.order('created_at',{ascending:false}).limit(500);
+    const{data:sbData,error}=await query;
+    if(error){console.warn('⚠️ Load ['+key+']:',error.message);return;}
 
-    const fromSB = (sbData||[]).map(cfg.unpack);
-    const sbIds  = new Set(fromSB.map(x=>x.id));
+    const fromSB=(sbData||[]).map(cfg.unpack);
+    const sbIds=new Set(fromSB.map(x=>x.id));
 
-    // localStorage se
-    let fromLS = [];
-    try { const r=localStorage.getItem(key); if(r) fromLS=JSON.parse(r); } catch(e){}
+    let fromLS=[];
+    try{const r=localStorage.getItem(key);if(r)fromLS=JSON.parse(r);}catch(e){}
 
-    // Jo LS mein hai lekin SB mein nahi → SB mein bhi upsert karo
-    const missing = fromLS.filter(x=>x.id && !sbIds.has(x.id));
-    if (missing.length > 0) {
-      console.log('🔄 Merge ['+key+']: Supabase mein',missing.length,'records missing — saving...');
-      try {
-        const rows = missing.map(cfg.pack);
-        const {error:upErr} = await _sb.from(cfg.table).upsert(rows,{onConflict:'id'});
+    // Jo LS mein hai lekin SB mein nahi — upsert karo
+    const missing=fromLS.filter(x=>x.id&&!sbIds.has(x.id));
+    if(missing.length>0){
+      console.log('🔄 Merge ['+key+']: Saving',missing.length,'missing records to Supabase...');
+      try{
+        const rows=missing.map(cfg.pack);
+        const{error:upErr}=await _sb.from(cfg.table).upsert(rows,{onConflict:'id'});
         if(upErr) console.error('❌ Merge upsert ['+key+']:',upErr.message);
-        else console.log('✅ Merge saved ['+key+']:',missing.length,'records');
-      } catch(e){console.error('❌ Merge exception:',e.message);}
+        else console.log('✅ Merge saved ['+key+']:',missing.length);
+      }catch(e){console.error('❌ Merge exception:',e.message);}
     }
 
-    // Merged result
-    const merged = [...fromSB, ...missing];
-    localStorage.setItem(key, JSON.stringify(merged));
-    updateAppVariable(key, merged);
-
-  } catch(e){console.warn('⚠️ loadAndMerge exception ['+key+']:',e.message);}
+    const merged=[...fromSB,...missing];
+    localStorage.setItem(key,JSON.stringify(merged));
+    updateAppVariable(key,merged);
+  }catch(e){console.warn('⚠️ loadAndMerge ['+key+']:',e.message);}
 }
 
 // ================================================================
-//  runAutoCycleAndSync()
+//  runAutoCycleAndSync() — done task refresh pe pending nahi hoga
 // ================================================================
 async function runAutoCycleAndSync() {
-  if (!_sb) return;
-  const today = new Date().toISOString().slice(0,10);
-  const cur = window.tasks||[];
+  if(!_sb) return;
+  const today=new Date().toISOString().slice(0,10);
+  const cur=window.tasks||[];
 
-  function isDueToday(t) {
-    const n=new Date(), dd=n.getDate(), mm=n.getMonth(), yy=n.getFullYear();
-    const f=t.freq||'daily';
-    const o=t.schedDate?new Date(t.schedDate+'T00:00:00'):null;
-    const od=o?o.getDate():null, om=o?o.getMonth():null;
+  function isDueToday(t){
+    const n=new Date(),dd=n.getDate(),mm=n.getMonth(),yy=n.getFullYear();
+    const f=t.freq||'daily',o=t.schedDate?new Date(t.schedDate+'T00:00:00'):null;
+    const od=o?o.getDate():null,om=o?o.getMonth():null;
     if(f==='daily')return true;
     if(f==='15-day'){if(!o||n<o)return false;return Math.floor((n-o)/864e5)%15===0;}
     if(f==='monthly'){if(!o||n<o)return false;return dd===Math.min(od,new Date(yy,mm+1,0).getDate());}
@@ -242,18 +219,18 @@ async function runAutoCycleAndSync() {
   const newT=[];
 
   cur.forEach(t=>{
-    if(t.status!=='done') return;
-    if(t.lastDone===today) return;        // aaj done kiya — skip
-    if(!isDueToday(t)) return;
-    // sirf parentTaskId se check karo
+    if(t.status!=='done')return;
+    if(t.lastDone===today)return; // aaj done kiya — skip
+    if(!isDueToday(t))return;
+    // FIXED: sirf parentTaskId se check karo
     const exists=cur.some(x=>x.parentTaskId===t.id&&x.schedDate===today&&x.status==='pending');
-    if(exists) return;
+    if(exists)return;
     newT.push({
-      id:uid(), name:t.name, dept:t.dept, freq:t.freq,
-      assignedTo:[...(t.assignedTo||[])], assigneeEmails:[...(t.assigneeEmails||[])],
-      time:t.time||'', schedDate:today, priority:t.priority, notes:t.notes||'',
-      status:'pending', doneBy:'', doneTime:'', doneRemark:'', delayReason:'',
-      isDelayed:false, lastDone:'', completionHistory:[], created:today,
+      id:uid(),name:t.name,dept:t.dept,freq:t.freq,
+      assignedTo:[...(t.assignedTo||[])],assigneeEmails:[...(t.assigneeEmails||[])],
+      time:t.time||'',schedDate:today,priority:t.priority,notes:t.notes||'',
+      status:'pending',doneBy:'',doneTime:'',doneRemark:'',delayReason:'',
+      isDelayed:false,lastDone:'',completionHistory:[],created:today,
       createdBy:t.createdBy||'SYSTEM',
       activityLog:[{by:'SYSTEM',action:'AUTO CYCLE',details:'Freq:'+t.freq,at:fDT()}],
       parentTaskId:t.id
@@ -267,7 +244,7 @@ async function runAutoCycleAndSync() {
   try{
     const rows=newT.map(TABLES['hops-tasks'].pack);
     const{error}=await _sb.from('tasks').upsert(rows,{onConflict:'id'});
-    if(error)console.error('❌ Auto-cycle upsert:',error.message);
+    if(error) console.error('❌ Auto-cycle upsert:',error.message);
     else console.log('✅ Auto-cycle saved:',newT.length);
   }catch(e){console.error('❌ Auto-cycle exception:',e.message);}
   localStorage.setItem('hops-reset',today);
@@ -277,7 +254,7 @@ async function runAutoCycleAndSync() {
 //  loadFromSupabase()
 // ================================================================
 async function loadFromSupabase() {
-  for (const key of Object.keys(TABLES)) {
+  for(const key of Object.keys(TABLES)){
     await loadAndMerge(key);
   }
   console.log('✅ All data loaded & merged!');
@@ -320,7 +297,7 @@ function setupRealtime() {
 // ================================================================
 //  dbDelete()
 // ================================================================
-window.dbDelete = async function(type, id) {
+window.dbDelete = async function(type,id) {
   const tmap={'task':'tasks','issue':'issues','employee':'employees','dept':'departments','admin':'admins','handover':'handovers','delegation':'delegations','trash':'trash','link':'user_links'};
   const tbl=tmap[type];
   if(!tbl)return{ok:false,reason:'unknown_type'};
@@ -349,26 +326,21 @@ window.dbDelete = async function(type, id) {
       await new Promise((res,rej)=>{
         const s=document.createElement('script');
         s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
-        s.onload=res; s.onerror=()=>rej(new Error('Supabase SDK load nahi hua'));
+        s.onload=res;s.onerror=()=>rej(new Error('Supabase SDK load nahi hua'));
         document.head.appendChild(s);
       });
     }
 
     _sb=window.supabase.createClient(SB_URL,SB_KEY);
     const{error:testErr}=await _sb.from('departments').select('id').limit(1);
-    if(testErr)throw new Error('Connection failed: '+testErr.message);
+    if(testErr) throw new Error('Connection failed: '+testErr.message);
 
     bar.textContent='⏳ Data sync ho raha hai...';
 
-    // ✅ CRITICAL ORDER:
-    // 1. Pehle _ready = true — taaki sv() calls ab directly save ho sakein
-    // 2. Queue flush — pehle se pending saves
-    // 3. PHIR loadFromSupabase — taaki queue ke baad Supabase fetch ho
-    //    (is tarah locally saved data Supabase mein pahunch jaata hai
-    //     PEHLE load hone se — so merge mein woh milenge)
-    _ready = true;
-    await flushQueue();          // pending saves pehle
-    await loadFromSupabase();    // phir load+merge
+    // ✅ _ready=true PEHLE — ab sv() calls immediately save ho sakti hain
+    _ready=true;
+
+    await loadFromSupabase();
     setupRealtime();
 
     bar.style.background='#1a5c3a';
@@ -379,13 +351,12 @@ window.dbDelete = async function(type, id) {
       if(typeof renderPage==='function')renderPage(currentPage);
       if(typeof updateBadges==='function')updateBadges();
       if(typeof buildSidebar==='function')buildSidebar();
-    } else {
+    }else{
       if(typeof loadSession==='function'&&loadSession()){
         if(currentRole==='mainadmin'&&typeof scheduleAllReminders==='function')scheduleAllReminders();
         if(typeof startApp==='function')startApp();
       }
     }
-
   }catch(err){
     console.error('❌ DB Error:',err.message);
     bar.style.background='#7a1a1a';

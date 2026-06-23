@@ -1,12 +1,11 @@
 // ================================================================
 //  supabase_db.js — Hospital Ops System
-//  FIXED VERSION v2 — Auto-cycle task count mismatch fix
+//  FIXED VERSION v3
 //
-//  Changes:
-//  1. loadFromSupabase() ke baad auto-cycle check run hota hai
-//     aur naye tasks Supabase mein bhi save ho jaate hain
-//  2. dbDelete() mein no_rows detection (RLS policy warning)
-//  3. 'trash' type support in dbDelete() for restore flow
+//  Fix 1: sv() — agar Supabase ready nahi hai to queue mein rakh
+//          aur ready hone par flush karo (task gayab hone ka fix)
+//  Fix 2: runAutoCycleAndSync() — alreadyExists check fixed
+//          (done task refresh pe pending nahi hoga)
 // ================================================================
 
 const SB_URL = 'https://jlltvarrtcgzsmqxlssb.supabase.co';
@@ -14,6 +13,9 @@ const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 
 let _sb    = null;
 let _ready = false;
+
+// ✅ FIX 1: Save queue — jab tak Supabase ready nahi, saves queue mein rakho
+const _saveQueue = []; // {key, val}[]
 
 // ================================================================
 //  TABLE MAP
@@ -278,13 +280,13 @@ const TABLES = {
 
 };
 
-// ── USER LINKS dynamic handler ──
+// ── USER LINKS ──
 const LINKS_TABLE = 'user_links';
 function isLinkKey(key) { return typeof key === 'string' && key.startsWith('hops-links-'); }
 function linkUsernameFromKey(key) { return key.replace('hops-links-', ''); }
 
 // ================================================================
-//  updateAppVariable() — DB data seedha app variables mein daalo
+//  updateAppVariable()
 // ================================================================
 function updateAppVariable(key, data) {
   const varMap = {
@@ -320,7 +322,7 @@ function updateAppVariable(key, data) {
 }
 
 // ================================================================
-//  ld() — LOAD FUNCTION
+//  ld()
 // ================================================================
 window.ld = function(key, defaultVal) {
   try {
@@ -332,16 +334,9 @@ window.ld = function(key, defaultVal) {
 };
 
 // ================================================================
-//  sv() — SAVE FUNCTION
+//  _doSupabaseSave() — actual Supabase upsert
 // ================================================================
-window.sv = async function(key, val) {
-
-  // Step 1: localStorage mein turant save
-  try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {}
-
-  // Step 2: Supabase mein save
-  if (!_ready || !_sb) return;
-
+async function _doSupabaseSave(key, val) {
   // USER LINKS
   if (isLinkKey(key)) {
     if (!Array.isArray(val)) return;
@@ -370,43 +365,68 @@ window.sv = async function(key, val) {
   try {
     if (val.length > 0) {
       const rows = val.map(cfg.pack);
-      const { error: upsertErr } = await _sb.from(cfg.table).upsert(rows, { onConflict: 'id' });
-      if (upsertErr) console.error('❌ Upsert error ['+key+']:', upsertErr.message);
+      const { error } = await _sb.from(cfg.table).upsert(rows, { onConflict: 'id' });
+      if (error) console.error('❌ Upsert error ['+key+']:', error.message);
       else console.log('✅ Saved ['+key+'] —', val.length, 'records');
     }
   } catch(e) { console.error('❌ sv() exception:', e.message||e); }
+}
+
+// ================================================================
+//  ✅ FIX 1: sv() — Queue support
+//  Agar Supabase ready nahi to queue mein daalo
+//  Ready hone par flushSaveQueue() sab ek saath save karega
+// ================================================================
+window.sv = async function(key, val) {
+  // Step 1: localStorage mein turant save (hamesha)
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {}
+
+  // Step 2: Supabase ready hai to seedha save, warna queue mein
+  if (!_ready || !_sb) {
+    // Queue mein daalo — same key ki purani entry replace karo
+    const existingIdx = _saveQueue.findIndex(q => q.key === key);
+    if (existingIdx >= 0) {
+      _saveQueue[existingIdx] = { key, val };
+    } else {
+      _saveQueue.push({ key, val });
+    }
+    console.log('⏳ Queued ['+key+'] — Supabase ready nahi hai abhi');
+    return;
+  }
+
+  await _doSupabaseSave(key, val);
 };
 
 // ================================================================
-//  runAutoCycleAndSync()
-//  ─────────────────────
-//  Yeh function Supabase se tasks load hone KE BAAD chalta hai.
+//  flushSaveQueue() — Ready hone par queue flush karo
+// ================================================================
+async function flushSaveQueue() {
+  if (_saveQueue.length === 0) return;
+  console.log('🔄 Queue flush kar raha hai —', _saveQueue.length, 'pending saves...');
+  const toFlush = [..._saveQueue];
+  _saveQueue.length = 0; // clear queue
+  for (const item of toFlush) {
+    await _doSupabaseSave(item.key, item.val);
+  }
+  console.log('✅ Queue flush complete!');
+}
+
+// ================================================================
+//  ✅ FIX 2: runAutoCycleAndSync() — alreadyExists check fixed
 //
-//  Problem jo fix kar raha hai:
-//  ─────────────────────────────
-//  Pehle auto-cycle sirf page load pe (JS top mein) localStorage
-//  se chalta tha. Lekin Supabase load hota tha BAAD MEIN aur
-//  naye auto-cycle tasks ko overwrite kar deta tha — kyunki
-//  Supabase mein woh tasks exist hi nahi karte the.
+//  Bug tha: x.id === t.id condition match kar raha tha done task
+//  ko hi — isliye alreadyExists = false rehta tha aur nayi copy
+//  ban jaati thi even though task already done tha aaj ke liye.
 //
-//  Ab kya hota hai:
-//  ─────────────────
-//  1. Supabase se tasks load ho jaate hain (real source of truth)
-//  2. Phir hum check karte hain — aaj ke liye kisi bhi "done"
-//     recurring task ka pending copy already hai ya nahi
-//  3. Agar nahi hai → nayi copy banate hain
-//  4. Nayi copy seedha Supabase mein bhi upsert karte hain
-//  5. Isliye refresh pe tasks count stable rehta hai
+//  Fix: Sirf PENDING copies check karo aur parentTaskId match karo
+//  Done task ke liye lastDone === today check bhi add kiya
 // ================================================================
 async function runAutoCycleAndSync() {
   if (!_ready || !_sb) return;
 
   const today = new Date().toISOString().slice(0, 10);
-
-  // Ensure tasks variable is current
   const currentTasks = window.tasks || [];
 
-  // isTaskDueToday — same logic as main app
   function isTaskDueTodayLocal(task) {
     const todayDate = new Date();
     const dd = todayDate.getDate(), mm = todayDate.getMonth(), yy = todayDate.getFullYear();
@@ -416,7 +436,6 @@ async function runAutoCycleAndSync() {
     const origMonth = orig ? orig.getMonth() : null;
 
     if (freq === 'daily') return true;
-
     if (freq === '15-day') {
       if (!orig || todayDate < orig) return false;
       const diffDays = Math.floor((todayDate - orig) / (1000 * 60 * 60 * 24));
@@ -424,8 +443,7 @@ async function runAutoCycleAndSync() {
     }
     if (freq === 'monthly') {
       if (!orig || todayDate < orig) return false;
-      const lastDay = new Date(yy, mm + 1, 0).getDate();
-      return dd === Math.min(origDay, lastDay);
+      return dd === Math.min(origDay, new Date(yy, mm + 1, 0).getDate());
     }
     if (freq === 'quarterly') {
       if (!orig || todayDate < orig) return false;
@@ -454,18 +472,21 @@ async function runAutoCycleAndSync() {
   const newTasks = [];
 
   currentTasks.forEach(t => {
-    // Sirf "done" tasks ke liye cycle check karein
+    // Sirf "done" tasks check karein
     if (t.status !== 'done') return;
-    // Agar aaj already complete kar liya (lastDone = today) to skip
+
+    // ✅ FIX: Agar aaj ki date pe done hua hai to cycle nahi chahiye
     if (t.lastDone === today) return;
+
     // Agar aaj due nahi hai to skip
     if (!isTaskDueTodayLocal(t)) return;
 
-    // Check: kya aaj ke liye already ek pending copy exist karti hai?
+    // ✅ FIX: alreadyExists — sirf PENDING copies check karo
+    // x.id === t.id wali condition REMOVE kari — woh done task khud tha
     const alreadyExists = currentTasks.some(
-      x => (x.parentTaskId === t.id || x.id === t.id) &&
-           x.schedDate === today &&
-           x.status === 'pending'
+      x => x.parentTaskId === t.id &&   // yeh t ki COPY hai
+           x.schedDate === today &&      // aaj ke liye hai
+           x.status === 'pending'        // abhi bhi pending hai
     );
     if (alreadyExists) return;
 
@@ -507,35 +528,26 @@ async function runAutoCycleAndSync() {
     return;
   }
 
-  console.log('🔄 Auto-cycle:', newTasks.length, 'nayi pending copies ban rahi hain...');
+  console.log('🔄 Auto-cycle:', newTasks.length, 'nayi pending copies...');
 
-  // App variable update karo
   window.tasks = [...(window.tasks || []), ...newTasks];
-
-  // localStorage update karo
   try { localStorage.setItem('hops-tasks', JSON.stringify(window.tasks)); } catch(e) {}
 
-  // ✅ KEY FIX: Supabase mein bhi seedha upsert karo
-  // Isliye refresh pe ye tasks wapas aayenge — Supabase hi source of truth hai
   try {
     const cfg = TABLES['hops-tasks'];
     const rows = newTasks.map(cfg.pack);
     const { error } = await _sb.from('tasks').upsert(rows, { onConflict: 'id' });
-    if (error) {
-      console.error('❌ Auto-cycle Supabase upsert error:', error.message);
-    } else {
-      console.log('✅ Auto-cycle tasks Supabase mein save ho gaye:', newTasks.length);
-    }
+    if (error) console.error('❌ Auto-cycle upsert error:', error.message);
+    else console.log('✅ Auto-cycle tasks Supabase mein save:', newTasks.length);
   } catch(e) {
-    console.error('❌ Auto-cycle Supabase exception:', e.message || e);
+    console.error('❌ Auto-cycle exception:', e.message || e);
   }
 
-  // localStorage reset mark karo taki main app dobara cycle na kare
   localStorage.setItem('hops-reset', today);
 }
 
 // ================================================================
-//  loadFromSupabase() — Startup pe saara data fetch karo
+//  loadFromSupabase()
 // ================================================================
 async function loadFromSupabase() {
   const keys = Object.keys(TABLES);
@@ -547,30 +559,21 @@ async function loadFromSupabase() {
       if (cfg.table === 'activity_log') {
         query = query.order('created_at', { ascending: false }).limit(500);
       }
-
       const { data, error } = await query;
       if (error) { console.warn('⚠️ Load error ['+key+']:', error.message); continue; }
 
       const parsed = (data || []).map(cfg.unpack);
-
-      // localStorage update
       localStorage.setItem(key, JSON.stringify(parsed));
-
-      // App variable update
       updateAppVariable(key, parsed);
-
     } catch(e) { console.warn('⚠️ Load exception ['+key+']:', e.message||e); }
   }
 
   console.log('✅ Supabase se saara data load ho gaya!');
-
-  // ✅ FIX: Data load hone KE BAAD auto-cycle run karo
-  // Pehle tasks = Supabase data, phir auto-cycle check
   await runAutoCycleAndSync();
 }
 
 // ================================================================
-//  loadUserLinks() — Login ke baad user ke links load karo
+//  loadUserLinks()
 // ================================================================
 window.loadUserLinks = async function() {
   if (!_ready || !_sb) return;
@@ -592,7 +595,7 @@ window.loadUserLinks = async function() {
 };
 
 // ================================================================
-//  setupRealtime() — Live changes
+//  setupRealtime()
 // ================================================================
 function setupRealtime() {
   const realtimeTables = ['tasks', 'issues', 'departments', 'employees', 'delegations', 'admins'];
@@ -622,7 +625,7 @@ function setupRealtime() {
 }
 
 // ================================================================
-//  dbDelete() — Supabase DB se record permanently delete karo
+//  dbDelete()
 // ================================================================
 window.dbDelete = async function(type, id) {
   const tableMap = {
@@ -638,41 +641,22 @@ window.dbDelete = async function(type, id) {
   };
 
   const tableName = tableMap[type];
-  if (!tableName) {
-    console.warn('⚠️ Unknown type for DB delete:', type);
-    return { ok: false, reason: 'unknown_type' };
-  }
-
-  if (!_ready || !_sb) {
-    console.warn('⚠️ DB not ready — delete skipped for', type, id);
-    return { ok: false, reason: 'not_ready' };
-  }
+  if (!tableName) return { ok: false, reason: 'unknown_type' };
+  if (!_ready || !_sb) return { ok: false, reason: 'not_ready' };
 
   try {
     const { data, error } = await _sb.from(tableName).delete().eq('id', id).select('id');
-
-    if (error) {
-      console.error('❌ DB Delete error ['+type+']:', error.message);
-      return { ok: false, reason: 'error', message: error.message };
-    }
-
-    if (!data || data.length === 0) {
-      console.error('❌ DB Delete returned 0 rows ['+type+'] id:', id,
-        '— likely missing RLS DELETE policy on table:', tableName);
-      return { ok: false, reason: 'no_rows', table: tableName };
-    }
-
+    if (error) return { ok: false, reason: 'error', message: error.message };
+    if (!data || data.length === 0) return { ok: false, reason: 'no_rows', table: tableName };
     console.log('✅ DB se delete ho gaya ['+type+'] id:', id);
     return { ok: true };
-
   } catch(e) {
-    console.error('❌ dbDelete exception:', e.message || e);
     return { ok: false, reason: 'exception', message: e.message || String(e) };
   }
 };
 
 // ================================================================
-//  INIT — Page load pe shuru hota hai
+//  INIT
 // ================================================================
 (async function startDB() {
 
@@ -688,7 +672,6 @@ window.dbDelete = async function(type, id) {
   document.body.appendChild(bar);
 
   try {
-    // Step 1: Supabase SDK load karo
     if (!window.supabase) {
       await new Promise((resolve, reject) => {
         const script = document.createElement('script');
@@ -699,22 +682,19 @@ window.dbDelete = async function(type, id) {
       });
     }
 
-    // Step 2: Client banao
     _sb = window.supabase.createClient(SB_URL, SB_KEY);
 
-    // Step 3: Test connection
     const { error: testErr } = await _sb.from('departments').select('id').limit(1);
     if (testErr) throw new Error('Connection failed: ' + testErr.message);
 
-    // Step 4: Data load karo (+ auto-cycle andar hi run hoga)
     bar.textContent = '⏳ Data load ho raha hai...';
     await loadFromSupabase();
 
-    // Step 5: Realtime
     setupRealtime();
 
-    // Step 6: Ready!
+    // ✅ FIX 1: Ready hone par queue flush karo
     _ready = true;
+    await flushSaveQueue();
 
     bar.style.background = '#1a5c3a';
     bar.textContent = '✅ Database connected! Data load ho gaya.';

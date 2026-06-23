@@ -1,16 +1,12 @@
 // ================================================================
 //  supabase_db.js — Hospital Ops System
-//  UPDATED VERSION — Delete + Restore fixes
+//  FIXED VERSION v2 — Auto-cycle task count mismatch fix
 //
-//  Changes from original:
-//  1. employees table mein username column support (already was there)
-//  2. dbDelete() mein 'trash' type add kiya — restore ke baad
-//     trash record Supabase se bhi hata sake
-//  3. ✅ NEW FIX: dbDelete() ab verify karta hai ki row actually
-//     delete hua ya nahi (RLS policy missing hone par Supabase
-//     error nahi deta, bas 0 rows delete karta hai — silently).
-//     Ab .select('id') chain karke confirm karte hain ki delete
-//     successful tha ya nahi, aur {ok:true/false} return karte hain.
+//  Changes:
+//  1. loadFromSupabase() ke baad auto-cycle check run hota hai
+//     aur naye tasks Supabase mein bhi save ho jaate hain
+//  2. dbDelete() mein no_rows detection (RLS policy warning)
+//  3. 'trash' type support in dbDelete() for restore flow
 // ================================================================
 
 const SB_URL = 'https://jlltvarrtcgzsmqxlssb.supabase.co';
@@ -100,29 +96,33 @@ const TABLES = {
       is_delayed:      o.isDelayed       || false,
       created:         o.created         || '',
       created_by:      o.createdBy       || '',
-      activity_log:    o.activityLog     || []
+      activity_log:    o.activityLog     || [],
+      completion_history: o.completionHistory || [],
+      parent_task_id:  o.parentTaskId    || ''
     }),
     unpack: r => ({
-      id:              r.id,
-      name:            r.name            || '',
-      dept:            r.dept            || '',
-      freq:            r.freq            || 'daily',
-      assignedTo:      r.assigned_to     || [],
-      assigneeEmails:  r.assignee_emails || [],
-      time:            r.time            || '',
-      schedDate:       r.sched_date      || '',
-      priority:        r.priority        || 'medium',
-      notes:           r.notes           || '',
-      lastDone:        r.last_done       || '',
-      status:          r.status          || 'pending',
-      doneBy:          r.done_by         || '',
-      doneTime:        r.done_time       || '',
-      doneRemark:      r.done_remark     || '',
-      delayReason:     r.delay_reason    || '',
-      isDelayed:       r.is_delayed      || false,
-      created:         r.created         || '',
-      createdBy:       r.created_by      || '',
-      activityLog:     r.activity_log    || []
+      id:                 r.id,
+      name:               r.name            || '',
+      dept:               r.dept            || '',
+      freq:               r.freq            || 'daily',
+      assignedTo:         r.assigned_to     || [],
+      assigneeEmails:     r.assignee_emails || [],
+      time:               r.time            || '',
+      schedDate:          r.sched_date      || '',
+      priority:           r.priority        || 'medium',
+      notes:              r.notes           || '',
+      lastDone:           r.last_done       || '',
+      status:             r.status          || 'pending',
+      doneBy:             r.done_by         || '',
+      doneTime:           r.done_time       || '',
+      doneRemark:         r.done_remark     || '',
+      delayReason:        r.delay_reason    || '',
+      isDelayed:          r.is_delayed      || false,
+      created:            r.created         || '',
+      createdBy:          r.created_by      || '',
+      activityLog:        r.activity_log    || [],
+      completionHistory:  r.completion_history || [],
+      parentTaskId:       r.parent_task_id  || ''
     }),
   },
 
@@ -378,6 +378,163 @@ window.sv = async function(key, val) {
 };
 
 // ================================================================
+//  runAutoCycleAndSync()
+//  ─────────────────────
+//  Yeh function Supabase se tasks load hone KE BAAD chalta hai.
+//
+//  Problem jo fix kar raha hai:
+//  ─────────────────────────────
+//  Pehle auto-cycle sirf page load pe (JS top mein) localStorage
+//  se chalta tha. Lekin Supabase load hota tha BAAD MEIN aur
+//  naye auto-cycle tasks ko overwrite kar deta tha — kyunki
+//  Supabase mein woh tasks exist hi nahi karte the.
+//
+//  Ab kya hota hai:
+//  ─────────────────
+//  1. Supabase se tasks load ho jaate hain (real source of truth)
+//  2. Phir hum check karte hain — aaj ke liye kisi bhi "done"
+//     recurring task ka pending copy already hai ya nahi
+//  3. Agar nahi hai → nayi copy banate hain
+//  4. Nayi copy seedha Supabase mein bhi upsert karte hain
+//  5. Isliye refresh pe tasks count stable rehta hai
+// ================================================================
+async function runAutoCycleAndSync() {
+  if (!_ready || !_sb) return;
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  // Ensure tasks variable is current
+  const currentTasks = window.tasks || [];
+
+  // isTaskDueToday — same logic as main app
+  function isTaskDueTodayLocal(task) {
+    const todayDate = new Date();
+    const dd = todayDate.getDate(), mm = todayDate.getMonth(), yy = todayDate.getFullYear();
+    const freq = task.freq || 'daily';
+    const orig = task.schedDate ? new Date(task.schedDate + 'T00:00:00') : null;
+    const origDay   = orig ? orig.getDate()  : null;
+    const origMonth = orig ? orig.getMonth() : null;
+
+    if (freq === 'daily') return true;
+
+    if (freq === '15-day') {
+      if (!orig || todayDate < orig) return false;
+      const diffDays = Math.floor((todayDate - orig) / (1000 * 60 * 60 * 24));
+      return diffDays % 15 === 0;
+    }
+    if (freq === 'monthly') {
+      if (!orig || todayDate < orig) return false;
+      const lastDay = new Date(yy, mm + 1, 0).getDate();
+      return dd === Math.min(origDay, lastDay);
+    }
+    if (freq === 'quarterly') {
+      if (!orig || todayDate < orig) return false;
+      const mDiff = (yy - orig.getFullYear()) * 12 + (mm - origMonth);
+      if (mDiff % 3 !== 0) return false;
+      return dd === Math.min(origDay, new Date(yy, mm + 1, 0).getDate());
+    }
+    if (freq === 'half-yearly') {
+      if (!orig || todayDate < orig) return false;
+      const mDiff = (yy - orig.getFullYear()) * 12 + (mm - origMonth);
+      if (mDiff % 6 !== 0) return false;
+      return dd === Math.min(origDay, new Date(yy, mm + 1, 0).getDate());
+    }
+    if (freq === 'yearly') {
+      if (!orig || todayDate < orig) return false;
+      return mm === origMonth && dd === Math.min(origDay, new Date(yy, origMonth + 1, 0).getDate());
+    }
+    return false;
+  }
+
+  const fDateTime = () => new Date().toLocaleString('en-IN', {
+    day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true
+  });
+  const uid = () => 'id-' + Date.now() + Math.random().toString(36).slice(2, 6);
+
+  const newTasks = [];
+
+  currentTasks.forEach(t => {
+    // Sirf "done" tasks ke liye cycle check karein
+    if (t.status !== 'done') return;
+    // Agar aaj already complete kar liya (lastDone = today) to skip
+    if (t.lastDone === today) return;
+    // Agar aaj due nahi hai to skip
+    if (!isTaskDueTodayLocal(t)) return;
+
+    // Check: kya aaj ke liye already ek pending copy exist karti hai?
+    const alreadyExists = currentTasks.some(
+      x => (x.parentTaskId === t.id || x.id === t.id) &&
+           x.schedDate === today &&
+           x.status === 'pending'
+    );
+    if (alreadyExists) return;
+
+    // Nayi pending copy banao
+    const copy = {
+      id:                 uid(),
+      name:               t.name,
+      dept:               t.dept,
+      freq:               t.freq,
+      assignedTo:         [...(t.assignedTo || [])],
+      assigneeEmails:     [...(t.assigneeEmails || [])],
+      time:               t.time || '',
+      schedDate:          today,
+      priority:           t.priority,
+      notes:              t.notes || '',
+      status:             'pending',
+      doneBy:             '',
+      doneTime:           '',
+      doneRemark:         '',
+      delayReason:        '',
+      isDelayed:          false,
+      lastDone:           '',
+      completionHistory:  [],
+      created:            today,
+      createdBy:          t.createdBy || 'SYSTEM',
+      activityLog: [{
+        by: 'SYSTEM',
+        action: 'AUTO CYCLE',
+        details: 'Frequency: ' + t.freq + ' — copied from: ' + t.name,
+        at: fDateTime()
+      }],
+      parentTaskId: t.id
+    };
+    newTasks.push(copy);
+  });
+
+  if (newTasks.length === 0) {
+    console.log('✅ Auto-cycle: Koi nayi copy banana zaroori nahi thi.');
+    return;
+  }
+
+  console.log('🔄 Auto-cycle:', newTasks.length, 'nayi pending copies ban rahi hain...');
+
+  // App variable update karo
+  window.tasks = [...(window.tasks || []), ...newTasks];
+
+  // localStorage update karo
+  try { localStorage.setItem('hops-tasks', JSON.stringify(window.tasks)); } catch(e) {}
+
+  // ✅ KEY FIX: Supabase mein bhi seedha upsert karo
+  // Isliye refresh pe ye tasks wapas aayenge — Supabase hi source of truth hai
+  try {
+    const cfg = TABLES['hops-tasks'];
+    const rows = newTasks.map(cfg.pack);
+    const { error } = await _sb.from('tasks').upsert(rows, { onConflict: 'id' });
+    if (error) {
+      console.error('❌ Auto-cycle Supabase upsert error:', error.message);
+    } else {
+      console.log('✅ Auto-cycle tasks Supabase mein save ho gaye:', newTasks.length);
+    }
+  } catch(e) {
+    console.error('❌ Auto-cycle Supabase exception:', e.message || e);
+  }
+
+  // localStorage reset mark karo taki main app dobara cycle na kare
+  localStorage.setItem('hops-reset', today);
+}
+
+// ================================================================
 //  loadFromSupabase() — Startup pe saara data fetch karo
 // ================================================================
 async function loadFromSupabase() {
@@ -394,7 +551,7 @@ async function loadFromSupabase() {
       const { data, error } = await query;
       if (error) { console.warn('⚠️ Load error ['+key+']:', error.message); continue; }
 
-      const parsed = (data||[]).map(cfg.unpack);
+      const parsed = (data || []).map(cfg.unpack);
 
       // localStorage update
       localStorage.setItem(key, JSON.stringify(parsed));
@@ -406,6 +563,10 @@ async function loadFromSupabase() {
   }
 
   console.log('✅ Supabase se saara data load ho gaya!');
+
+  // ✅ FIX: Data load hone KE BAAD auto-cycle run karo
+  // Pehle tasks = Supabase data, phir auto-cycle check
+  await runAutoCycleAndSync();
 }
 
 // ================================================================
@@ -462,20 +623,6 @@ function setupRealtime() {
 
 // ================================================================
 //  dbDelete() — Supabase DB se record permanently delete karo
-//
-//  ✅ FIX (this update): pehle yeh function delete call karke
-//  error null aane par turant "success" maan leta tha. Lekin
-//  Supabase mein agar DELETE ke liye RLS policy missing ho, to
-//  query bina koi error diye 0 rows delete karti hai — isliye
-//  delete "successful" dikhta tha console mein, lekin row Supabase
-//  mein reh jaata tha, aur refresh pe wapas aa jaata tha.
-//
-//  Ab .select('id') chain karke yeh confirm karte hain ki kitni
-//  rows actually delete hui. Agar error nahi hai par 0 rows
-//  delete hui, to ise FAILURE maante hain (RLS issue ka strong
-//  signal) aur caller ko {ok:false, reason:'no_rows'} return
-//  karte hain, taki UI user ko clearly batae ki Supabase se delete
-//  nahi hua.
 // ================================================================
 window.dbDelete = async function(type, id) {
   const tableMap = {
@@ -510,9 +657,8 @@ window.dbDelete = async function(type, id) {
     }
 
     if (!data || data.length === 0) {
-      // No error, but nothing was actually deleted — almost always
-      // means Supabase RLS has no DELETE policy on this table.
-      console.error('❌ DB Delete returned 0 rows ['+type+'] id:', id, '— likely missing RLS DELETE policy on table:', tableName);
+      console.error('❌ DB Delete returned 0 rows ['+type+'] id:', id,
+        '— likely missing RLS DELETE policy on table:', tableName);
       return { ok: false, reason: 'no_rows', table: tableName };
     }
 
@@ -560,7 +706,7 @@ window.dbDelete = async function(type, id) {
     const { error: testErr } = await _sb.from('departments').select('id').limit(1);
     if (testErr) throw new Error('Connection failed: ' + testErr.message);
 
-    // Step 4: Data load karo
+    // Step 4: Data load karo (+ auto-cycle andar hi run hoga)
     bar.textContent = '⏳ Data load ho raha hai...';
     await loadFromSupabase();
 
@@ -594,4 +740,4 @@ window.dbDelete = async function(type, id) {
     setTimeout(() => bar.remove(), 7000);
   }
 
-})()
+})();
